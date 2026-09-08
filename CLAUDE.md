@@ -595,7 +595,7 @@ plain questions answered plainly.
 
 ### The "0/10" figure was a BROKEN MEASUREMENT — retracted
 
-Proxy-verified rate: **6 of 8 turns produced a real tool call.** The earlier
+Proxy-verified rate: **6 of 8 turns produced a real tool call** (later pinned down at 17/30 on the full toolset — see the table below). The earlier
 `0/10` in this file was wrong. It came from detecting tool use by grepping the
 CLI transcript for a `⚡` activity marker, **which `hermes chat -q` does not
 print**. Tools were firing the whole time; the test could not see them.
@@ -644,18 +644,37 @@ Hermes Agent is installed, configured, fully local, **fast** (6-10s warm) and
 back. The open problem is reliability, not capability — roughly one turn in
 four skips the tool and answers from imagination.
 
+### Measured: trimming tools helps, temperature does not (2026-09-07)
+
+Three conditions, 30 proxy-verified turns each ("run `echo tok-N` and report
+its exact output"), counting turns that produced a real `tool_calls` array:
+
+| condition | tools | tool schemas | rate |
+| --- | ---: | ---: | ---: |
+| temp 0.2, full toolset | 17 | 25.3 KB | 6/10 (n=10) |
+| temp **0.0**, full toolset | 17 | 25.3 KB | **17/30 = 57%** |
+| temp 0.0, **trimmed** | **6** | **12.7 KB** | **26/30 = 87%** |
+
+Fisher exact, trimmed vs full: **p = 0.020**. Temperature 0.0 vs 0.2 on the
+full toolset: no difference (6/10 vs 6/10), so the earlier hope that sampling
+was the lever is dead — it fixed the *raw-API* leak but not this.
+
+Trimming also shrank the system prompt from 13.7 KB to **6.4 KB**, because the
+skills index goes with it. Combined fixed payload roughly halved.
+
+The trimmed set is the wishlist plus the one tool the test needs:
+
+    hermes tools disable file skills todo clarify vision browser image_gen computer_use
+    # leaves: web, terminal, memory, session_search, cronjob
+
+**This is now the configured state.** Temperature is back at 0.2 rather than
+0.0 — it measured identically and is the less degenerate setting.
+
+87% is usable for a keyboard tool where a skipped tool is visible. It is still
+not good enough to put behind the Stick unattended, because the remaining 13%
+fabricates rather than refusing.
+
 Untried levers, cheapest first:
-
-1. **Lower the temperature further.** The Modelfile sets 0.2; 0.0 measured
-   clean on the raw-API leak test and has not been tried end to end.
-2. **Trim tools further.** 17 are attached; the wishlist needs 4
-   (`memory`, `session_search`, `cronjob_manage`, `web_search`) plus maybe
-   `read_file`/`terminal`. Fewer choices, fewer chances to skip.
-3. **A hosted model** via `fallback_providers` for reliability, keeping local
-   as the default.
-
-Do not spend more effort on smaller local models: the 64K floor is enforced at
-startup, and the only local model that clears it is the one that fails here.
 
 ### Current config state
 
