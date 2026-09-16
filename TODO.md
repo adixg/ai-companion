@@ -18,6 +18,22 @@ the detailed `docs/*.md` investigation logs behind each of these.
   speakers before STT, rather than only gating whole-utterance acceptance
   after the fact (today's speaker-verification gate accepts or rejects an
   entire utterance; it doesn't clean up an accepted one).
+- **HAT SPK2 speaker module — not plug-and-play compatible, on hold.**
+  Checked against M5Stack's own docs: the StickS3's I2S audio pins (G18
+  MCLK/G14 DOUT/G17 BCLK/G15 LRCK, to its onboard ES8311 codec) are internal
+  and **not exposed on the Hat2-Bus connector** — that connector only carries
+  GPIO5/4/Boot/6/1/7/8/43/44/2/3 plus power/ground. HAT SPK2 was designed for
+  the original M5StickC's HAT connector, which *does* expose fixed I2S pins
+  (GPIO 25/26/0 on that board's ESP32 chip) — pins that don't exist in any
+  comparable form on the StickS3's silicon. So even though the module may
+  physically plug into the StickS3's Hat2-Bus, the electrical signals it
+  expects aren't present there. Two paths forward, neither a quick config
+  flag: (1) hand-wire it — open the HAT SPK2 board, trace which physical pad
+  carries BCK/WS/DATA, and bit-bang a second I2S peripheral (I2S_NUM_1) on
+  spare Hat2-Bus GPIOs via a custom `M5.Speaker.config()`; or (2) skip the
+  HAT connector, treat it as an external amp/speaker wired directly to spare
+  GPIOs instead of relying on its connector-based design. Owner chose to
+  hold off on this for now.
 
 ## Agent / backend
 
