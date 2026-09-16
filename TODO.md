@@ -85,12 +85,15 @@ via `ss` showing the live TCP connection.
   layout unconditionally, so `WindowCompat.setDecorFitsSystemWindows` is a
   no-op now — fixed with a real `ViewCompat` window-insets listener instead.
 - **Phase 6 — cutover, in progress.** The `tools/echo_server.py` validation
-  this bullet calls for is now done with the *real* firmware on both ends
-  (see above), not just the app side. **Still remaining**: a full
-  conversation test against `bridge_server.py` itself (STT/LLM/TTS, not
-  just the echo stand-in), then a soak test (hours-long connection,
-  reconnect after BT toggle/reboot/deep-sleep), then update `README.md`'s
-  architecture diagram.
+  this bullet calls for is done with the *real* firmware on both ends (see
+  above). **The real conversation test is now also done (2026-09-16)**: two
+  full turns against the actual `bridge_server.py` (not the echo stand-in)
+  confirmed end to end in both the server log (speaker gate accepted,
+  correct STT, in-character LLM reply) and the Stick's own serial log
+  (`listening... -> Processing -> heard -> Generating -> Done`, no drops).
+  Full log: `docs/ble-migration.md`. **Still remaining**: a soak test
+  (hours-long connection, reconnect after BT toggle/reboot/deep-sleep), then
+  update `README.md`'s architecture diagram.
 
 ## Home-server deployment (k3s across the 1650 and the 4060)
 

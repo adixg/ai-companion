@@ -23,11 +23,14 @@ verified is labelled as such.
 
 ## Hardware budget
 
-**NVIDIA RTX 4060 Laptop GPU, 8188 MiB total** (WSL2). Chatterbox TTS is the
-largest single GPU consumer (Turbo ~4x whisper's VRAM); Nano-on-CUDA is the
-bridge's default (`--chatterbox-nano`, 1857 MiB, 1.18s latency) — it beats
-Turbo outright on both size and speed. VITS is the only free-on-VRAM option
-but can't clone a voice.
+**NVIDIA RTX 4060 Laptop GPU, 8188 MiB total** (WSL2). **Default TTS backend
+is VITS-Umamusume** (`--tts-backend vits`, speaker id 10 = Grass Wonder),
+0 MiB VRAM, runs on CPU, ~1.35s latency — changed 2026-09-16 from Chatterbox
+at the owner's request. Chatterbox (voice cloning from a reference clip,
+`--tts-backend chatterbox`) is still available and is the larger GPU
+consumer of the two (Turbo ~4x whisper's VRAM); when using it,
+Nano-on-CUDA (`--chatterbox-nano`, 1857 MiB, 1.18s latency) beats Turbo
+outright on both size and speed, so prefer it over Turbo.
 
 Full measured tables (STT/TTS latency and VRAM by backend, the Chatterbox
 Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.md`**.
@@ -160,9 +163,14 @@ log; **`WS connected to bridge_server.py`** on the phone (via
 `tools/echo_server.py` as the stand-in), independently confirmed via `ss`
 showing the live TCP connection on both ends of this whole chain.
 
-**Phase 6 (cutover) is what's left**: a full STT/LLM/TTS conversation test
-against `bridge_server.py` itself (not just the echo stand-in), then a soak
-test, then updating `README.md`'s architecture diagram.
+**Phase 6's conversation test is DONE (2026-09-16).** Two full turns ran
+against the real `bridge_server.py` (not the echo stand-in) over BLE,
+confirmed independently in both the server log (speaker gate accepted at
+0.611/0.661 vs. the 0.6 threshold, correct STT, in-character LLM reply) and
+the Stick's own serial log (`listening... -> Processing -> heard ->
+Generating -> Done`, no drops). **Still remaining**: a soak test
+(hours-long connection, reconnect after BT toggle/reboot/deep-sleep), then
+updating `README.md`'s architecture diagram.
 
 Full log (measured flash-budget tables, the full bug-by-bug debugging arc,
 Android tooling setup in WSL2): **`docs/ble-migration.md`**. Remaining
