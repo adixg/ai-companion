@@ -5,6 +5,19 @@ the detailed `docs/*.md` investigation logs behind each of these.
 
 ## Firmware / hardware features
 
+- **Screen cycling is blocked until BLE connects — real bug, found live
+  (2026-09-16).** `connectNetwork()` (`firmware/m5stick_bridge/src/main.cpp`)
+  blocks in `while (!BleTransport::ready())` from inside `setup()`, before
+  `loop()` — where all of BtnA's tap-to-cycle-screens handling lives — ever
+  runs. So on a cold boot with no phone connected (app not open, or out of
+  range), the Stick sits on the connecting screen (Rina's face) forever and
+  BtnA does nothing, since that code path is simply never reached. Confirmed
+  live: the owner's Stick got stuck exactly this way with the
+  `android_companion` app closed. Clock and pomodoro don't need BLE at all,
+  so there's no real reason screen cycling should be gated on a connection
+  they don't use — the fix is to move the connect wait off the boot path (or
+  let BtnA cycle screens during it) rather than block. Not yet implemented;
+  needs a real on-device test once written, not just a code read.
 - **Wake word activation** — replace hold-to-talk with a wake word, so
   talking to her doesn't need a button press at all.
 - **IMU gesture sensor** — activate listening when the wrist is raised
@@ -118,22 +131,50 @@ Phase 2 is now underway on the home server, see below.
   wav (1.35s, 16-bit mono 22050Hz).
 
   The RTX 4060 laptop has **joined as a second node** (`laptop-2vc40919`,
-  WSL2/Ubuntu 24.04), and `controller/gpu_scheduler/` is deployed there —
-  needed an RBAC fix (`kopf` needs `patch` on nodes for its own bookkeeping,
-  not just `get`/`list`/`watch`) and `agent.yaml` needed a `nodeSelector`
-  pinning it to the always-up node (it was landing on the 4060 node by
-  default, so stopping that laptop killed `agent` at the exact moment the
-  controller needed to fail it over). **Known bug, not yet fixed**: the
-  laptop node is unhealthy — it flaps `Ready`/`NotReady`, its kubelet API
-  intermittently 502s, and `ollama-rtx4060` can't start
-  (`UnexpectedAdmissionError: no healthy devices present` for
-  `nvidia.com/gpu`) — GPU passthrough into containerd under WSL2 specifically
-  hasn't been made to work yet, confirmed broken rather than just
-  unverified now. `gateway.yaml` is now applied and `Running` too
-  (2026-09-16), re-verified with a real wire-protocol test against the
-  actual in-cluster pod (see Phase 5 below for the parity work this
+  WSL2/Ubuntu 24.04), and **the whole chain is now proven working end to
+  end, live (2026-09-16)**: `gateway`'s wire-protocol test round-tripped
+  through `agent` → `ollama-rtx4060` (running on this laptop) → `qwen3:8b`
+  → a real generated reply. Getting there took finding and fixing a real
+  chain of WSL2-specific networking bugs, each one only surfacing once the
+  previous was fixed:
+  - `kopf` needs `patch` on nodes for its own bookkeeping, not just
+    `get`/`list`/`watch` — without it, every node event 403'd before ever
+    reaching the controller's actual logic, so `agent` never got retargeted
+    at all.
+  - `agent.yaml` and `controller/gpu_scheduler/deploy.yaml` needed a
+    `nodeSelector` pinning them to the always-up node — neither does GPU
+    work, but with no selector the scheduler put both on the 4060 node, so
+    stopping that laptop killed the controller at the exact moment it
+    needed to fail `agent` over.
+  - k3s's agent-to-server "reverse tunnel" (what `kubectl logs`/`exec`
+    depend on) and flannel's VXLAN backend **both** independently defaulted
+    to each node's LAN IP instead of its Tailscale address — neither node is
+    on the other's LAN, so cross-node pod traffic (including `agent` →
+    `ollama-rtx4060`) silently went nowhere. Fixed with `--node-ip` and
+    `--flannel-iface=tailscale0` on both the agent (this laptop) and the
+    k3s **server** (`arch-ssd`) — confirmed via `agent` opening a real TCP
+    connection to `ollama-rtx4060` across nodes, not just the env var
+    flipping correctly.
+  - `agent.yaml` hardcoded one `--model` regardless of which Ollama backend
+    was active. Added `OLLAMA_MODEL` as a second env var (same pattern as
+    `OLLAMA_HOST`) that the controller now patches alongside the host on
+    every transition, so `qwen3.5:4b` (GTX 1650, 4GB) and `qwen3:8b` (RTX
+    4060, 8GB) both get requested correctly.
+  - `ollama-rtx4060.yaml` originally needed models copied in via `sudo
+    rsync` (pod-to-internet egress is separately broken on this node,
+    another WSL2 networking quirk not yet chased down) — that crashed the
+    laptop when a ~20GB copy filled its actual ~25GB-free `C:` drive
+    mid-transfer. Fixed properly: the pod now bind-mounts this node's
+    existing native Ollama data dir directly, read-write, so it shares
+    already-pulled models in place instead of duplicating anything, now or
+    for any future model.
+
+  `gateway.yaml` is applied and `Running` too, confirmed with the same live
+  wire-protocol test (see Phase 5 below for the parity work this
   confirms). Still open: chart into `deploy/helm/` and wire `deploy/argocd/`
-  for GitOps sync.
+  for GitOps sync; the pod-to-internet-egress bug on the laptop node is a
+  known, separate, not-yet-fixed WSL2 networking gap (harmless now that
+  models are shared rather than pulled in-pod).
 - **Phase 3 — observability**: `observability/prometheus/` +
   `observability/grafana/`.
 - **Phase 4 — benchmarks**: `benchmarks/latency/` (split architecture vs.

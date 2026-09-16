@@ -202,15 +202,24 @@ all `Running` with confirmed CUDA access. `tts`'s `/synth` 500 (both TTS
 backends assumed a dev machine's conda envs) is **fixed and re-verified
 live** (2026-09-16) — see `TODO.md`.
 
-The RTX 4060 laptop (WSL2/Ubuntu) has **joined as a second node**, and
-`controller/gpu_scheduler/` is deployed there (needed an RBAC fix — `kopf`
-needs `patch` on nodes, not just read access — and `agent.yaml` needed a
-`nodeSelector` pinning it to the always-up node, since the scheduler had
-been landing it on the 4060 by default). **Known bug, unfixed**: that node
-is unhealthy — it flaps `Ready`/`NotReady` and its nvidia device plugin
-reports no healthy `nvidia.com/gpu` devices, so `ollama-rtx4060` can't
-start. GPU passthrough into containerd under WSL2 specifically is confirmed
-broken now, not just unverified.
+The RTX 4060 laptop (WSL2/Ubuntu) has **joined as a second node, and the
+whole chain is proven working end to end on it, live (2026-09-16)**: a real
+request round-tripped `gateway` → `agent` → `ollama-rtx4060` (this laptop)
+→ `qwen3:8b` → a real generated reply. Getting here meant finding and
+fixing a chain of WSL2-specific networking bugs — kopf needing `patch` on
+nodes for its own bookkeeping, `agent`/the controller needing a
+`nodeSelector` to stay off the intermittent node, and (the deep one) both
+k3s's reverse-tunnel and flannel's VXLAN backend defaulting to each node's
+LAN IP instead of its Tailscale address, silently blackholing all
+cross-node pod traffic until `--node-ip`/`--flannel-iface=tailscale0` were
+set on **both** nodes. `agent.yaml` also gained a paired `OLLAMA_MODEL` env
+var the controller now patches alongside `OLLAMA_HOST`, so each node
+requests the model sized for its own card. Full bug-by-bug log: `TODO.md`.
+`ollama-rtx4060` bind-mounts this node's existing native Ollama store
+rather than copying models into the pod — a copy attempt crashed this
+laptop's `C:` drive mid-transfer (only ~25GB was ever really free, not the
+~880GB `df -h` reported from inside WSL2), a lesson now saved for future
+sessions.
 
 **`services/gateway` now has full wire-protocol parity with
 `bridge_server.py`** (2026-09-16) — the real `start`/`stop`/`reset` +
