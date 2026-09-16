@@ -217,10 +217,11 @@ broken now, not just unverified.
 `heard:`/`status:`/`reply:`/binary-audio/`end` protocol, the in-process
 speaker-verification gate, `announce`, and `encourage_loop` are all ported,
 verified against both a mocked test suite and a live smoke test against the
-real running `stt`/`agent`/`tts` pods. `bridge_server.py` is still what's
-actually flashed against for now — `gateway.yaml` hasn't even been applied
-to the cluster yet, and cutting the actual Stick over is the real remaining
-step after that, tracked in `TODO.md`.
+real running `stt`/`agent`/`tts` pods. **`gateway.yaml` is now applied and
+`Running`** too (2026-09-16), re-verified with the same live wire-protocol
+test against the actual in-cluster pod. `bridge_server.py` is still what's
+actually flashed against for now — cutting the real Stick over to the
+k3s-hosted gateway is the one remaining step, tracked in `TODO.md`.
 
 Full design (service-boundary reasoning, the k3s-vs-alternatives tradeoff,
 node/service placement table, the added-latency cost of splitting a process

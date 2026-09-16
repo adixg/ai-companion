@@ -129,10 +129,11 @@ Phase 2 is now underway on the home server, see below.
   (`UnexpectedAdmissionError: no healthy devices present` for
   `nvidia.com/gpu`) — GPU passthrough into containerd under WSL2 specifically
   hasn't been made to work yet, confirmed broken rather than just
-  unverified now. Still open: `gateway.yaml` hasn't been applied to the
-  cluster yet (the gateway's code has real firmware parity, see Phase 5
-  below, but nothing has applied the manifest). Then chart into
-  `deploy/helm/` and wire `deploy/argocd/` for GitOps sync.
+  unverified now. `gateway.yaml` is now applied and `Running` too
+  (2026-09-16), re-verified with a real wire-protocol test against the
+  actual in-cluster pod (see Phase 5 below for the parity work this
+  confirms). Still open: chart into `deploy/helm/` and wire `deploy/argocd/`
+  for GitOps sync.
 - **Phase 3 — observability**: `observability/prometheus/` +
   `observability/grafana/`.
 - **Phase 4 — benchmarks**: `benchmarks/latency/` (split architecture vs.
@@ -159,7 +160,8 @@ Phase 2 is now underway on the home server, see below.
   `reply:(didn't catch that)`/`end` for a non-speech tone). `--enroll` mode
   was deliberately **not** ported -- enrollment only touches the voiceprint
   file on disk, so bridge_server.py's existing `--enroll` still works
-  regardless of which server handles live conversations. **Still open**:
-  applying `gateway.yaml` to the cluster at all (nothing has yet), then
-  cutting the actual M5StickS3 over from `bridge_server.py` to the
-  k3s-hosted gateway once BLE Phase 6's soak test is finished too.
+  regardless of which server handles live conversations. `gateway.yaml` is
+  now applied and `Running` too, re-verified with the same wire-protocol
+  test against the actual in-cluster pod. **Still open**: cutting the
+  actual M5StickS3 over from `bridge_server.py` to the k3s-hosted gateway,
+  once BLE Phase 6's soak test is finished too.
