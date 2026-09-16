@@ -168,9 +168,11 @@ against the real `bridge_server.py` (not the echo stand-in) over BLE,
 confirmed independently in both the server log (speaker gate accepted at
 0.611/0.661 vs. the 0.6 threshold, correct STT, in-character LLM reply) and
 the Stick's own serial log (`listening... -> Processing -> heard ->
-Generating -> Done`, no drops). **Still remaining**: a soak test
-(hours-long connection, reconnect after BT toggle/reboot/deep-sleep), then
-updating `README.md`'s architecture diagram.
+Generating -> Done`, no drops). **`README.md`'s architecture diagram is
+also updated (2026-09-16)** to show `android_companion/` bridging the Stick's
+BLE connection to `bridge_server.py`, replacing the old Wi-Fi-hotspot +
+`tools/termux_relay.py` picture. **Still remaining**: a soak test
+(hours-long connection, reconnect after BT toggle/reboot/deep-sleep).
 
 Full log (measured flash-budget tables, the full bug-by-bug debugging arc,
 Android tooling setup in WSL2): **`docs/ble-migration.md`**. Remaining

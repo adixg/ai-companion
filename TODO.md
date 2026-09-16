@@ -91,9 +91,12 @@ via `ss` showing the live TCP connection.
   confirmed end to end in both the server log (speaker gate accepted,
   correct STT, in-character LLM reply) and the Stick's own serial log
   (`listening... -> Processing -> heard -> Generating -> Done`, no drops).
-  Full log: `docs/ble-migration.md`. **Still remaining**: a soak test
-  (hours-long connection, reconnect after BT toggle/reboot/deep-sleep), then
-  update `README.md`'s architecture diagram.
+  Full log: `docs/ble-migration.md`. **`README.md`'s architecture diagram is
+  also updated (2026-09-16)** — the flowchart and layout tree now show
+  `android_companion/`'s BLE-central-plus-WebSocket-client bridging the
+  Stick to `bridge_server.py`, in place of the old Wi-Fi-hotspot +
+  `tools/termux_relay.py` path. **Still remaining**: a soak test (hours-long
+  connection, reconnect after BT toggle/reboot/deep-sleep).
 
 ## Home-server deployment (k3s across the 1650 and the 4060)
 
