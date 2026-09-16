@@ -46,26 +46,27 @@ the detailed `docs/*.md` investigation logs behind each of these.
 - **Tools as MCP servers**, not functions wired to one harness (Ollama today),
   so they survive a change of runtime or model without a rewrite.
 
-## BLE transport migration (Phases 4-6)
+## BLE transport migration (Phase 6 remaining)
 
-Phases 1-3 passed — see `docs/ble-migration.md` for the full log. **Phase 3
-(GATT protocol design) is fully closed**: byte-envelope codec, chunk
-reassembly, bonding, the app-layer shared-secret AUTH handshake, and
-TIME_SYNC are all implemented and confirmed round-tripping together on real
-hardware (2026-09-16) — including three real bugs found and fixed along the
-way (an Android bond-broadcast receiver needing `RECEIVER_EXPORTED`, a
-`WRITE_ENC` characteristic permission Android's stack reproducibly refused
-regardless of retries, and a stale phone-side bond record after repeated
-reflashing). Remaining, per
-`/home/aditya/.claude/plans/tranquil-drifting-stream.md`:
+Phases 1-5 all passed — see `docs/ble-migration.md` for the full log.
+**Phase 4 (merge into `m5stick_bridge`) is DONE (2026-09-16)**:
+`WiFi.h`/`WebSocketsClient` are gone from the real firmware, replaced by
+`ble_transport.h` (adapted from the Phase 3 spike's proven bonding/AUTH/
+TIME_SYNC/codec) and `ble_envelope.h`. Builds at 71.3% flash — better than
+Phase 1's 78.0% projection. Confirmed on the actual `m5stick_bridge`
+firmware now flashed and running (not a spike): connect → bond → AUTH →
+TIME_SYNC → normal `loop()` all working on the Stick's serial log, and
+`WS connected to bridge_server.py` on the phone, independently confirmed
+via `ss` showing the live TCP connection.
 
-- **Phase 4 — merge into `m5stick_bridge`**: rip out `WiFi.h`/
-  `WebSocketsClient`, add NimBLE + a new `ble_transport.h`, rewire
-  `main.cpp`'s connect/state-machine logic. **Blocks the rest of real
-  end-to-end testing** — `android_companion/` now correctly relays against
-  the *real* protocol, but the Stick itself still runs `m5stick_ble_flash_spike`,
-  which only sends synthetic STATUS frames, not real button-triggered
-  START/STOP/RESET, so nothing meaningful flows yet.
+- **Phase 3 (GATT protocol design)**: byte-envelope codec, chunk
+  reassembly, bonding, the app-layer shared-secret AUTH handshake, and
+  TIME_SYNC are all implemented and confirmed round-tripping together on
+  real hardware (2026-09-16) — including three real bugs found and fixed
+  along the way (an Android bond-broadcast receiver needing
+  `RECEIVER_EXPORTED`, a `WRITE_ENC` characteristic permission Android's
+  stack reproducibly refused regardless of retries, and a stale phone-side
+  bond record after repeated reflashing).
 - **Phase 5 — real Android companion app, DONE (2026-09-16).**
   `android_companion/` evolved from the Phase 3 spike into a real app:
   `RelayService` (foreground service, survives the Activity closing) owns
@@ -83,13 +84,13 @@ reflashing). Remaining, per
   `AndroidManifest.xml`'s comment), and `targetSdk` 36 enforces edge-to-edge
   layout unconditionally, so `WindowCompat.setDecorFitsSystemWindows` is a
   no-op now — fixed with a real `ViewCompat` window-insets listener instead.
-- **Phase 6 — cutover**: the `tools/echo_server.py` validation this bullet
-  originally called for first is now done for the *app* side (see Phase 5),
-  ahead of the Stick side being ready. Once Phase 4 lands: re-validate
-  against `echo_server.py` with the real firmware on both ends, then a full
-  conversation test against `bridge_server.py` itself, then a soak test
-  (hours-long connection, reconnect after BT toggle/reboot/deep-sleep), then
-  update `README.md`'s architecture diagram.
+- **Phase 6 — cutover, in progress.** The `tools/echo_server.py` validation
+  this bullet calls for is now done with the *real* firmware on both ends
+  (see above), not just the app side. **Still remaining**: a full
+  conversation test against `bridge_server.py` itself (STT/LLM/TTS, not
+  just the echo stand-in), then a soak test (hours-long connection,
+  reconnect after BT toggle/reboot/deep-sleep), then update `README.md`'s
+  architecture diagram.
 
 ## Home-server deployment (k3s across the 1650 and the 4060)
 

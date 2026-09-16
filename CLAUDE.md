@@ -106,7 +106,7 @@ Full detail (the mic-config no-op investigation, the `mouth_closed` sprite
 background bug and its two compounding causes, clock/pomodoro layout and
 button-handling decisions, the BtnB deep-sleep removal): **`docs/firmware-notes.md`**.
 
-## BLE transport migration (in progress)
+## BLE transport migration (Phase 6 remaining)
 
 Motivation: replace the phone's persistent Wi-Fi hotspot (battery/data
 drain) with BLE. ESP32-S3 is BLE-only (no Classic BT), so this is a
@@ -135,33 +135,38 @@ plain `WRITE` since the AUTH frame is the real access-control gate anyway;
 and a stale phone-side bond record after repeated reflashing, needing a
 manual unpair).
 
-**Phase 5 (real Android companion app) is DONE (2026-09-16), out of order
-ahead of Phase 4.** `android_companion/` evolved from spike into a real app:
-`RelayService` is a foreground service owning both the BLE central
-connection and an OkHttp WebSocket bridge to `bridge_server.py`'s actual
-protocol (translating BLE frames to/from `start`/`stop`/`reset`/
-`heard:`/`status:`/`reply:`/binary audio/`end`), plus a settings UI (host +
-secret, persisted), replacing `tools/termux_relay.py`'s job. Confirmed on
-real hardware: full connect → bond → AUTH → **WS connected to
-bridge_server.py** (via `tools/echo_server.py` as the stand-in, per Phase
-6's own plan), independently confirmed via `ss` showing the live TCP
-connection. Two real bugs found and fixed: Android blocks cleartext `ws://`
-by default since API 28 (deliberately allowed, see `AndroidManifest.xml`'s
-comment), and `targetSdk` 36 enforces edge-to-edge layout unconditionally,
-making the old `WindowCompat.setDecorFitsSystemWindows` opt-out a no-op —
-fixed with a real window-insets listener instead.
+**Phase 5 (real Android companion app) is DONE (2026-09-16).**
+`android_companion/` evolved from spike into a real app: `RelayService` is
+a foreground service owning both the BLE central connection and an OkHttp
+WebSocket bridge to `bridge_server.py`'s actual protocol (translating BLE
+frames to/from `start`/`stop`/`reset`/`heard:`/`status:`/`reply:`/binary
+audio/`end`), plus a settings UI (host + secret, persisted), replacing
+`tools/termux_relay.py`'s job. Two real bugs found and fixed: Android
+blocks cleartext `ws://` by default since API 28 (deliberately allowed, see
+`AndroidManifest.xml`'s comment), and `targetSdk` 36 enforces edge-to-edge
+layout unconditionally, making the old `WindowCompat.setDecorFitsSystemWindows`
+opt-out a no-op — fixed with a real window-insets listener instead.
 
-`firmware/m5stick_ble_flash_spike/` remains a spike (still only sends
-synthetic demo payloads, not real button-triggered behavior) — **Phase 4
-(merging BLE into the real `firmware/m5stick_bridge/`) is the one remaining
-blocker** before a genuine end-to-end test is possible; the Android side is
-ready and waiting on the other end. `m5stick_bridge` itself still needs no
-changes until Phase 4 starts, so normal Wi-Fi-based firmware development can
-proceed in parallel with zero interaction with this track.
+**Phase 4 (merged into the real `firmware/m5stick_bridge/`) is also DONE
+(2026-09-16).** `WiFi.h`/`WebSocketsClient` are gone from the real
+firmware; `ble_transport.h` (adapted from the Phase 3 spike's proven
+bonding/AUTH/TIME_SYNC/codec) and `ble_envelope.h` replace them, and the old
+`webSocketEvent()` became `handleBleFrame()` with unchanged logic. Builds at
+**71.3% flash** — better than Phase 1's 78.0% projection. **Confirmed on
+the actual `m5stick_bridge` firmware now flashed and running** (not a
+spike): connect → bond → AUTH → TIME_SYNC (`settimeofday` called with a
+real epoch) → normal `loop()` running correctly, on the Stick's own serial
+log; **`WS connected to bridge_server.py`** on the phone (via
+`tools/echo_server.py` as the stand-in), independently confirmed via `ss`
+showing the live TCP connection on both ends of this whole chain.
+
+**Phase 6 (cutover) is what's left**: a full STT/LLM/TTS conversation test
+against `bridge_server.py` itself (not just the echo stand-in), then a soak
+test, then updating `README.md`'s architecture diagram.
 
 Full log (measured flash-budget tables, the full bug-by-bug debugging arc,
 Android tooling setup in WSL2): **`docs/ble-migration.md`**. Remaining
-phases (4, 6): **`TODO.md`**.
+phase (6): **`TODO.md`**.
 
 ## Home-server deployment (k3s, in progress)
 
