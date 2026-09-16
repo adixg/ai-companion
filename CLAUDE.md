@@ -133,6 +133,32 @@ Full log (measured flash-budget tables, the full bug-by-bug debugging arc,
 Android tooling setup in WSL2): **`docs/ble-migration.md`**. Remaining
 phases (3-6): **`TODO.md`**.
 
+## Home-server deployment (k3s, in progress)
+
+Motivation: this project's purpose is explicitly employability (portfolio
+piece for recruiters), which is why this track favors real infra (k3s, a
+custom controller) over the leaner option a pure personal-use deployment
+would pick. Target hardware is two real, heterogeneous GPU nodes: the home
+server's GTX 1650 (4GB, always on) and this laptop's RTX 4060 (intermittent).
+
+`bridge_server.py` is being split along `voicepipe/registry.py`'s existing
+STT/LLM/TTS/SV boundaries into HTTP services (`services/stt`, `services/agent`,
+`services/tts`, `services/gateway`), deployed via k3s manifests
+(`deploy/kubernetes/`). `controller/gpu_scheduler/` is a custom Kubernetes
+controller that retargets the `agent` service's Ollama endpoint to whichever
+GPU node is currently up — the differentiated piece of this track.
+
+**Phase 1 (service split, manifests, controller design) done; nothing yet
+applied to a live cluster** — this dev environment has neither a k3s cluster
+nor a working Docker daemon. `bridge_server.py` remains what's actually
+flashed against; `services/gateway` is a Phase-1 skeleton, not wire-protocol
+compatible with the real firmware yet.
+
+Full design (service-boundary reasoning, the k3s-vs-alternatives tradeoff,
+node/service placement table, the added-latency cost of splitting a process
+into networked services): **`docs/deployment-architecture.md`**. Remaining
+phases (2-5): **`TODO.md`**.
+
 ## Architecture reminders
 
 - Adding an LLM backend is one file in `voicepipe/backends/` — auto-discovered,

@@ -69,3 +69,27 @@ per `/home/aditya/.claude/plans/tranquil-drifting-stream.md`:
   LLM involved), then a full conversation test, then a soak test (hours-long
   connection, reconnect after BT toggle/reboot/deep-sleep), then update
   `README.md`'s architecture diagram.
+
+## Home-server deployment (k3s across the 1650 and the 4060)
+
+Phase 1 (service split + k8s manifests + GPU-scheduler controller design)
+done this session — see `docs/deployment-architecture.md` for the full plan
+and `services/`, `deploy/kubernetes/`, `controller/gpu_scheduler/` for the
+code. Nothing below has touched a live cluster yet.
+
+- **Phase 2 — cluster bring-up**: install k3s on both nodes, label them
+  (`gpu-tier=gtx1650`/`rtx4060`), apply `deploy/kubernetes/*.yaml`, validate
+  `services/gateway`'s Phase-1 `/turn` WS endpoint against a test client.
+  Then chart into `deploy/helm/` and wire `deploy/argocd/` for GitOps sync.
+- **Phase 3 — observability**: `observability/prometheus/` +
+  `observability/grafana/`.
+- **Phase 4 — benchmarks**: `benchmarks/latency/` (split architecture vs.
+  the `bridge_server.py` monolith — the service split adds network hops on
+  a latency-sensitive path, so this needs a real measured comparison, not
+  an assumption) and `benchmarks/gpu_allocation/` (how fast
+  `controller/gpu_scheduler/` actually retargets `agent` on a node
+  Ready/NotReady transition).
+- **Phase 5 — gateway parity port**: port `bridge_server.py`'s real
+  firmware wire protocol, speaker-verification gate, encouragement loop,
+  and `announce` into `services/gateway/`, then cut the M5StickS3 over from
+  `bridge_server.py` to the k3s-hosted gateway.
