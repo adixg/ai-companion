@@ -78,9 +78,9 @@ per `/home/aditya/.claude/plans/tranquil-drifting-stream.md`:
 ## Home-server deployment (k3s across the 1650 and the 4060)
 
 Phase 1 (service split + k8s manifests + GPU-scheduler controller design)
-done this session — see `docs/deployment-architecture.md` for the full plan
-and `services/`, `deploy/kubernetes/`, `controller/gpu_scheduler/` for the
-code. Nothing below has touched a live cluster yet.
+done — see `docs/deployment-architecture.md` for the full plan and
+`services/`, `deploy/kubernetes/`, `controller/gpu_scheduler/` for the code.
+Phase 2 is now underway on the home server, see below.
 
 - **Phase 2 — cluster bring-up**: home server (`arch-ssd`, GTX 1650) done —
   k3s installed and labeled, GPU runtime chain verified (containerd nvidia
