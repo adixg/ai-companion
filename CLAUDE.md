@@ -106,7 +106,7 @@ Full detail (the mic-config no-op investigation, the `mouth_closed` sprite
 background bug and its two compounding causes, clock/pomodoro layout and
 button-handling decisions, the BtnB deep-sleep removal): **`docs/firmware-notes.md`**.
 
-## BLE transport migration (in progress, paused)
+## BLE transport migration (in progress)
 
 Motivation: replace the phone's persistent Wi-Fi hotspot (battery/data
 drain) with BLE. ESP32-S3 is BLE-only (no Classic BT), so this is a
@@ -122,6 +122,12 @@ write API, NimBLE ATT resource exhaustion, a silent value-length cap, and
 zombie BLE connections from `am force-stop`) — full chain in the doc below,
 worth reading before touching this code again so none of it gets
 re-discovered from scratch.
+
+**Phase 3 (byte-envelope codec) is in progress.** The wire-format codec
+(`ble_envelope.h` / `BleEnvelopeCodec.kt`) and a real bidirectional demo are
+written and build-checked on both sides, not yet flashed/run on hardware.
+Bonding, the AUTH handshake, and TIME_SYNC are deliberately not started yet
+— next step once the codec round-trip is confirmed on real hardware.
 
 **All BLE work so far lives in throwaway spike projects**
 (`firmware/m5stick_ble_flash_spike/`, `android_companion/`) — the real

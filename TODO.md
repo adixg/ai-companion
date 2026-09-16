@@ -51,12 +51,17 @@ the detailed `docs/*.md` investigation logs behind each of these.
 Phases 1-2 passed — see `docs/ble-migration.md` for the full log. Remaining,
 per `/home/aditya/.claude/plans/tranquil-drifting-stream.md`:
 
-- **Phase 3 — GATT protocol design**: byte-envelope codec (frame types for
-  START/STOP/HEARD/STATUS/REPLY/AUDIO_CHUNK/etc.), chunk reassembly across
-  multiple physical BLE packets (confirmed necessary — a 1024-byte logical
-  chunk needs ≥2 physical notifies at the MTU ceiling found in Phase 2),
-  bonding + an app-layer shared-secret auth handshake, and time-sync (phone
-  writes wall-clock epoch since NTP goes away without Wi-Fi).
+- **Phase 3 — GATT protocol design, in progress.** Byte-envelope codec
+  (frame types for START/STOP/RESET/HEARD/STATUS/REPLY/AUDIO_CHUNK/END/
+  TIME_SYNC/AUTH) and chunk reassembly across multiple physical BLE packets
+  are done and build-checked on both sides (`ble_envelope.h` +
+  `BleEnvelopeCodec.kt`), wired into a real bidirectional demo in the spike
+  projects — not yet flashed/run on real hardware. **Still remaining**:
+  bonding + the app-layer shared-secret AUTH handshake, and time-sync (phone
+  writes wall-clock epoch since NTP goes away without Wi-Fi) — deliberately
+  deferred until the codec round-trip itself is confirmed working on
+  hardware. Full detail and the direction-split correction to this plan
+  file: `docs/ble-migration.md`.
 - **Phase 4 — merge into `m5stick_bridge`**: rip out `WiFi.h`/
   `WebSocketsClient`, add NimBLE + a new `ble_transport.h`, rewire
   `main.cpp`'s connect/state-machine logic.
