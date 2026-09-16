@@ -8,10 +8,14 @@ stale entry here is worse than no entry.
 
 This file is a **lean index** — current state and pointers only. The full
 investigation logs (measurements, dead ends, retracted theories, exact
-commands) live in `docs/`, split by topic so no single file grows large
-enough to get truncated by tools that load it (Hermes Agent silently
-truncates project context files past 20K chars — the reason this split
-exists). See `TODO.md` for the active punch list.
+commands) live in `docs/`, split by topic, because this file is loaded in
+full at the start of *every* Claude Code session regardless of what the
+session is actually about — a 92KB chronological log of old debugging arcs
+was pure context cost on every single session, not something worth paying
+just to keep it all in one file. (Hermes Agent also truncates project
+context past 20K chars, which is how the size problem first got noticed, but
+that's not why this split exists — Hermes isn't part of this project's
+actual pipeline.) See `TODO.md` for the active punch list.
 
 Every number below is measured or fetched, with the date and the command that
 produced it, so it can be re-checked rather than trusted. Anything not
