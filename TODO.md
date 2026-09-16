@@ -61,16 +61,35 @@ reflashing). Remaining, per
 
 - **Phase 4 — merge into `m5stick_bridge`**: rip out `WiFi.h`/
   `WebSocketsClient`, add NimBLE + a new `ble_transport.h`, rewire
-  `main.cpp`'s connect/state-machine logic.
-- **Phase 5 — real Android companion app**: today's `android_companion/` is
-  a disposable throughput-test spike. The real app needs the GATT central
-  logic plus a foreground service, the WebSocket bridge to `bridge_server.py`
-  (replacing `tools/termux_relay.py`'s job), permissions, auto-reconnect, and
-  a minimal settings UI.
-- **Phase 6 — cutover**: validate against `tools/echo_server.py` first (no
-  LLM involved), then a full conversation test, then a soak test (hours-long
-  connection, reconnect after BT toggle/reboot/deep-sleep), then update
-  `README.md`'s architecture diagram.
+  `main.cpp`'s connect/state-machine logic. **Blocks the rest of real
+  end-to-end testing** — `android_companion/` now correctly relays against
+  the *real* protocol, but the Stick itself still runs `m5stick_ble_flash_spike`,
+  which only sends synthetic STATUS frames, not real button-triggered
+  START/STOP/RESET, so nothing meaningful flows yet.
+- **Phase 5 — real Android companion app, DONE (2026-09-16).**
+  `android_companion/` evolved from the Phase 3 spike into a real app:
+  `RelayService` (foreground service, survives the Activity closing) owns
+  the BLE central connection plus an OkHttp WebSocket bridge to
+  `bridge_server.py`'s actual protocol (translating BLE frames to/from
+  `start`/`stop`/`reset`/`heard:`/`status:`/`reply:`/binary audio/`end`,
+  replacing `tools/termux_relay.py`'s job), a settings UI (host + shared
+  secret, persisted), a "Forget device" shortcut, and a battery-optimization
+  exemption request. Confirmed on real hardware: full connect → bond → AUTH
+  → WebSocket-to-`tools/echo_server.py` sequence succeeds end to end,
+  independently confirmed via `ss` showing the live TCP connection, not just
+  the app's own log. Two real bugs found and fixed along the way: Android
+  blocks cleartext `ws://` by default since API 28 (`bridge_server.py` only
+  ever speaks plain `ws://`, so cleartext is deliberately allowed — see
+  `AndroidManifest.xml`'s comment), and `targetSdk` 36 enforces edge-to-edge
+  layout unconditionally, so `WindowCompat.setDecorFitsSystemWindows` is a
+  no-op now — fixed with a real `ViewCompat` window-insets listener instead.
+- **Phase 6 — cutover**: the `tools/echo_server.py` validation this bullet
+  originally called for first is now done for the *app* side (see Phase 5),
+  ahead of the Stick side being ready. Once Phase 4 lands: re-validate
+  against `echo_server.py` with the real firmware on both ends, then a full
+  conversation test against `bridge_server.py` itself, then a soak test
+  (hours-long connection, reconnect after BT toggle/reboot/deep-sleep), then
+  update `README.md`'s architecture diagram.
 
 ## Home-server deployment (k3s across the 1650 and the 4060)
 

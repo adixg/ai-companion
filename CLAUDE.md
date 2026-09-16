@@ -135,16 +135,33 @@ plain `WRITE` since the AUTH frame is the real access-control gate anyway;
 and a stale phone-side bond record after repeated reflashing, needing a
 manual unpair).
 
-**All BLE work so far lives in throwaway spike projects**
-(`firmware/m5stick_ble_flash_spike/`, `android_companion/`) — the real
-`firmware/m5stick_bridge/` hasn't been touched and needs no changes until
-Phase 4 (next up: merging BLE into the real firmware) actually merges BLE
-in. Normal Wi-Fi-based firmware development can proceed in parallel with
-zero interaction with this track.
+**Phase 5 (real Android companion app) is DONE (2026-09-16), out of order
+ahead of Phase 4.** `android_companion/` evolved from spike into a real app:
+`RelayService` is a foreground service owning both the BLE central
+connection and an OkHttp WebSocket bridge to `bridge_server.py`'s actual
+protocol (translating BLE frames to/from `start`/`stop`/`reset`/
+`heard:`/`status:`/`reply:`/binary audio/`end`), plus a settings UI (host +
+secret, persisted), replacing `tools/termux_relay.py`'s job. Confirmed on
+real hardware: full connect → bond → AUTH → **WS connected to
+bridge_server.py** (via `tools/echo_server.py` as the stand-in, per Phase
+6's own plan), independently confirmed via `ss` showing the live TCP
+connection. Two real bugs found and fixed: Android blocks cleartext `ws://`
+by default since API 28 (deliberately allowed, see `AndroidManifest.xml`'s
+comment), and `targetSdk` 36 enforces edge-to-edge layout unconditionally,
+making the old `WindowCompat.setDecorFitsSystemWindows` opt-out a no-op —
+fixed with a real window-insets listener instead.
+
+`firmware/m5stick_ble_flash_spike/` remains a spike (still only sends
+synthetic demo payloads, not real button-triggered behavior) — **Phase 4
+(merging BLE into the real `firmware/m5stick_bridge/`) is the one remaining
+blocker** before a genuine end-to-end test is possible; the Android side is
+ready and waiting on the other end. `m5stick_bridge` itself still needs no
+changes until Phase 4 starts, so normal Wi-Fi-based firmware development can
+proceed in parallel with zero interaction with this track.
 
 Full log (measured flash-budget tables, the full bug-by-bug debugging arc,
 Android tooling setup in WSL2): **`docs/ble-migration.md`**. Remaining
-phases (3-6): **`TODO.md`**.
+phases (4, 6): **`TODO.md`**.
 
 ## Home-server deployment (k3s, in progress)
 
