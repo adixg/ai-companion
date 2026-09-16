@@ -54,13 +54,13 @@ per `/home/aditya/.claude/plans/tranquil-drifting-stream.md`:
 - **Phase 3 — GATT protocol design, in progress.** Byte-envelope codec
   (frame types for START/STOP/RESET/HEARD/STATUS/REPLY/AUDIO_CHUNK/END/
   TIME_SYNC/AUTH) and chunk reassembly across multiple physical BLE packets
-  are done and build-checked on both sides (`ble_envelope.h` +
-  `BleEnvelopeCodec.kt`), wired into a real bidirectional demo in the spike
-  projects — not yet flashed/run on real hardware. **Still remaining**:
+  are done, build-checked, and **round-trip confirmed on real hardware
+  (2026-09-16)** — both TX (including the multi-packet continuation path)
+  and RX decode correctly, per `docs/ble-migration.md`. **Still remaining**:
   bonding + the app-layer shared-secret AUTH handshake, and time-sync (phone
   writes wall-clock epoch since NTP goes away without Wi-Fi) — deliberately
-  deferred until the codec round-trip itself is confirmed working on
-  hardware. Full detail and the direction-split correction to this plan
+  deferred until the codec round-trip itself was confirmed working on
+  hardware, which it now is. Full detail and the direction-split correction to this plan
   file: `docs/ble-migration.md`.
 - **Phase 4 — merge into `m5stick_bridge`**: rip out `WiFi.h`/
   `WebSocketsClient`, add NimBLE + a new `ble_transport.h`, rewire

@@ -124,10 +124,11 @@ worth reading before touching this code again so none of it gets
 re-discovered from scratch.
 
 **Phase 3 (byte-envelope codec) is in progress.** The wire-format codec
-(`ble_envelope.h` / `BleEnvelopeCodec.kt`) and a real bidirectional demo are
-written and build-checked on both sides, not yet flashed/run on hardware.
-Bonding, the AUTH handshake, and TIME_SYNC are deliberately not started yet
-— next step once the codec round-trip is confirmed on real hardware.
+(`ble_envelope.h` / `BleEnvelopeCodec.kt`) round-trips correctly on real
+hardware (2026-09-16, both TX and RX, including the multi-packet
+continuation path — see `docs/ble-migration.md`). Bonding, the AUTH
+handshake, and TIME_SYNC are the remaining Phase 3 work, next up now that
+the codec itself is verified.
 
 **All BLE work so far lives in throwaway spike projects**
 (`firmware/m5stick_ble_flash_spike/`, `android_companion/`) — the real
