@@ -194,20 +194,23 @@ controller that retargets the `agent` service's Ollama endpoint to whichever
 GPU node is currently up — the differentiated piece of this track.
 
 **Phase 1 (service split, manifests, controller design) done. Phase 2
-(cluster bring-up) underway on the home server** (`arch-ssd`, GTX 1650): k3s
-is live there, the containerd→nvidia-container-runtime→RuntimeClass→device-
-plugin GPU chain is verified end to end (including GPU time-slicing, since
-the node has one physical GPU shared by two pods), and `ollama-gtx1650`,
-`stt`, `tts`, and `agent` are all `Running` with confirmed CUDA access
-(re-verified live over SSH, 2026-09-16). `agent`'s `OLLAMA_HOST` is
-`http://ollama-gtx1650:11434` — the home server is the only/default target
-right now. Known bug: `tts`'s `/synth` 500s in-cluster (the vits backend
-shells out to a conda path that doesn't exist in its container image) —
-see `TODO.md`. The RTX 4060 laptop (this laptop, WSL2/Ubuntu 24.04) hasn't
-joined as a second node yet, and neither `nvidia-container-toolkit` nor k3s
-are installed on it yet (checked 2026-09-16); `controller/gpu_scheduler/`
-(the piece that would auto-switch `agent` to the 4060 when it's up) is
-written but not deployed to the cluster.
+(cluster bring-up) underway on both nodes now.** `arch-ssd` (GTX 1650): k3s
+live, the containerd→nvidia-container-runtime→RuntimeClass→device-plugin GPU
+chain verified end to end (including GPU time-slicing, since the node has
+one physical GPU shared by two pods), `ollama-gtx1650`/`stt`/`tts`/`agent`
+all `Running` with confirmed CUDA access. `tts`'s `/synth` 500 (both TTS
+backends assumed a dev machine's conda envs) is **fixed and re-verified
+live** (2026-09-16) — see `TODO.md`.
+
+The RTX 4060 laptop (WSL2/Ubuntu) has **joined as a second node**, and
+`controller/gpu_scheduler/` is deployed there (needed an RBAC fix — `kopf`
+needs `patch` on nodes, not just read access — and `agent.yaml` needed a
+`nodeSelector` pinning it to the always-up node, since the scheduler had
+been landing it on the 4060 by default). **Known bug, unfixed**: that node
+is unhealthy — it flaps `Ready`/`NotReady` and its nvidia device plugin
+reports no healthy `nvidia.com/gpu` devices, so `ollama-rtx4060` can't
+start. GPU passthrough into containerd under WSL2 specifically is confirmed
+broken now, not just unverified.
 
 **`services/gateway` now has full wire-protocol parity with
 `bridge_server.py`** (2026-09-16) — the real `start`/`stop`/`reset` +
@@ -215,8 +218,9 @@ written but not deployed to the cluster.
 speaker-verification gate, `announce`, and `encourage_loop` are all ported,
 verified against both a mocked test suite and a live smoke test against the
 real running `stt`/`agent`/`tts` pods. `bridge_server.py` is still what's
-actually flashed against for now — cutting the Stick over to the
-k3s-hosted gateway is the one remaining step, gated on the `tts` bug above.
+actually flashed against for now — `gateway.yaml` hasn't even been applied
+to the cluster yet, and cutting the actual Stick over is the real remaining
+step after that, tracked in `TODO.md`.
 
 Full design (service-boundary reasoning, the k3s-vs-alternatives tradeoff,
 node/service placement table, the added-latency cost of splitting a process

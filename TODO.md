@@ -109,31 +109,30 @@ Phase 2 is now underway on the home server, see below.
   k3s installed and labeled, GPU runtime chain verified (containerd nvidia
   runtime + RuntimeClass + device plugin + time-slicing, see
   `docs/deployment-architecture.md`), `ollama-gtx1650`, `stt`, `tts`, and
-  `agent` all applied and confirmed `Running` with real GPU access
-  (re-verified live over SSH, 2026-09-16 — `agent`'s `OLLAMA_HOST` is
-  `http://ollama-gtx1650:11434`, i.e. the home server is today's default and
-  only target). **Known bug, not yet fixed**: the `tts` pod passes its
-  `/health` readiness probe but `/synth` 500s — `voicepipe/backends/vits.py`'s
-  `WorkerVoice` shells out to `/root/anaconda3/envs/uma-tts/bin/python`, a
-  conda env path that only exists on a dev machine that ran
-  `setup_envs.sh`, not inside `services/tts/Dockerfile`'s plain
-  `python:3.12-slim` image. Needs either a Dockerfile that builds/bundles a
-  real `uma-tts` environment, or a container-friendly non-subprocess VITS
-  path. `services/gateway/` handles this gracefully today (a `/synth`
-  failure still sends `end`, confirmed live), so it's a real gap but not a
-  crash. Still open: join the RTX 4060 laptop as a second node and label it
-  `gpu-tier=rtx4060` (use the home server's Tailscale name for `K3S_URL`,
-  not its DHCP LAN IP — see `deploy/kubernetes/README.md`), install
-  `nvidia-container-toolkit` + k3s agent on it (neither installed there yet,
-  confirmed 2026-09-16 — it's Ubuntu 24.04 in WSL2, so `apt`, not `pacman`;
-  GPU passthrough into containerd hasn't been verified under WSL2
-  specifically and needs checking once the node joins), apply
-  `ollama-rtx4060`/`gateway.yaml` (the gateway's code now has real firmware
-  parity, see Phase 5 below, but the manifest itself hasn't been applied to
-  the cluster yet), deploy `controller/gpu_scheduler/` (written, not yet run
-  against a live cluster) and confirm it actually retargets `agent` when
-  the 4060 node goes Ready/NotReady. Then chart into `deploy/helm/` and wire
-  `deploy/argocd/` for GitOps sync.
+  `agent` all applied and confirmed `Running` with real GPU access.
+  **`tts`'s `/synth` 500 is now fixed (2026-09-16)** — both TTS backends
+  hardcoded a dev-machine conda path that didn't exist in the container;
+  `PYTHON` now falls back to `sys.executable`, both CLI scripts are `COPY`'d
+  into the image, and `vits`'s image now clones its ~1.5GB git-lfs HF Space
+  during build. Re-verified live: `/synth` returns a real, valid synthesized
+  wav (1.35s, 16-bit mono 22050Hz).
+
+  The RTX 4060 laptop has **joined as a second node** (`laptop-2vc40919`,
+  WSL2/Ubuntu 24.04), and `controller/gpu_scheduler/` is deployed there —
+  needed an RBAC fix (`kopf` needs `patch` on nodes for its own bookkeeping,
+  not just `get`/`list`/`watch`) and `agent.yaml` needed a `nodeSelector`
+  pinning it to the always-up node (it was landing on the 4060 node by
+  default, so stopping that laptop killed `agent` at the exact moment the
+  controller needed to fail it over). **Known bug, not yet fixed**: the
+  laptop node is unhealthy — it flaps `Ready`/`NotReady`, its kubelet API
+  intermittently 502s, and `ollama-rtx4060` can't start
+  (`UnexpectedAdmissionError: no healthy devices present` for
+  `nvidia.com/gpu`) — GPU passthrough into containerd under WSL2 specifically
+  hasn't been made to work yet, confirmed broken rather than just
+  unverified now. Still open: `gateway.yaml` hasn't been applied to the
+  cluster yet (the gateway's code has real firmware parity, see Phase 5
+  below, but nothing has applied the manifest). Then chart into
+  `deploy/helm/` and wire `deploy/argocd/` for GitOps sync.
 - **Phase 3 — observability**: `observability/prometheus/` +
   `observability/grafana/`.
 - **Phase 4 — benchmarks**: `benchmarks/latency/` (split architecture vs.
@@ -161,6 +160,6 @@ Phase 2 is now underway on the home server, see below.
   was deliberately **not** ported -- enrollment only touches the voiceprint
   file on disk, so bridge_server.py's existing `--enroll` still works
   regardless of which server handles live conversations. **Still open**:
+  applying `gateway.yaml` to the cluster at all (nothing has yet), then
   cutting the actual M5StickS3 over from `bridge_server.py` to the
-  k3s-hosted gateway (needs Phase 2's `tts` bug fixed first, and BLE
-  Phase 6's soak test finished, before this is worth doing for real).
+  k3s-hosted gateway once BLE Phase 6's soak test is finished too.
