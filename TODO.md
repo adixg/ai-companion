@@ -108,14 +108,22 @@ Phase 2 is now underway on the home server, see below.
 - **Phase 2 — cluster bring-up**: home server (`arch-ssd`, GTX 1650) done —
   k3s installed and labeled, GPU runtime chain verified (containerd nvidia
   runtime + RuntimeClass + device plugin + time-slicing, see
-  `docs/deployment-architecture.md`), `ollama-gtx1650` and `stt` applied and
-  confirmed running with real GPU access. Still open: join the RTX 4060
-  laptop as a second node and label it `gpu-tier=rtx4060` (use the home
-  server's Tailscale name for `K3S_URL`, not its DHCP LAN IP — see
-  `deploy/kubernetes/README.md`), apply `tts`/`agent`/`gateway.yaml`,
-  validate `services/gateway`'s Phase-1 `/turn` WS endpoint against a test
-  client. Then chart into `deploy/helm/` and wire `deploy/argocd/` for
-  GitOps sync.
+  `docs/deployment-architecture.md`), `ollama-gtx1650`, `stt`, `tts`, and
+  `agent` all applied and confirmed `Running` with real GPU access
+  (re-verified live over SSH, 2026-09-16 — `agent`'s `OLLAMA_HOST` is
+  `http://ollama-gtx1650:11434`, i.e. the home server is today's default and
+  only target). Still open: join the RTX 4060 laptop as a second node and
+  label it `gpu-tier=rtx4060` (use the home server's Tailscale name for
+  `K3S_URL`, not its DHCP LAN IP — see `deploy/kubernetes/README.md`),
+  install `nvidia-container-toolkit` + k3s agent on it (neither installed
+  there yet, confirmed 2026-09-16 — it's Ubuntu 24.04 in WSL2, so `apt`, not
+  `pacman`; GPU passthrough into containerd hasn't been verified under WSL2
+  specifically and needs checking once the node joins), apply
+  `ollama-rtx4060`/`gateway.yaml`, deploy `controller/gpu_scheduler/`
+  (written, not yet run against a live cluster) and confirm it actually
+  retargets `agent` when the 4060 node goes Ready/NotReady, validate
+  `services/gateway`'s Phase-1 `/turn` WS endpoint against a test client.
+  Then chart into `deploy/helm/` and wire `deploy/argocd/` for GitOps sync.
 - **Phase 3 — observability**: `observability/prometheus/` +
   `observability/grafana/`.
 - **Phase 4 — benchmarks**: `benchmarks/latency/` (split architecture vs.

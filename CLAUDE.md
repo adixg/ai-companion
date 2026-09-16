@@ -197,9 +197,15 @@ GPU node is currently up — the differentiated piece of this track.
 (cluster bring-up) started on the home server** (`arch-ssd`, GTX 1650): k3s
 is live there, the containerd→nvidia-container-runtime→RuntimeClass→device-
 plugin GPU chain is verified end to end (including GPU time-slicing, since
-the node has one physical GPU shared by two pods), and `ollama-gtx1650` +
-`stt` are both `Running` with confirmed CUDA access. The RTX 4060 laptop
-hasn't joined as a second node yet. `bridge_server.py` remains what's
+the node has one physical GPU shared by two pods), and `ollama-gtx1650`,
+`stt`, `tts`, and `agent` are all `Running` with confirmed CUDA access
+(re-verified live over SSH, 2026-09-16). `agent`'s `OLLAMA_HOST` is
+`http://ollama-gtx1650:11434` — the home server is the only/default target
+right now. The RTX 4060 laptop (this laptop, WSL2/Ubuntu 24.04) hasn't
+joined as a second node yet, and neither `nvidia-container-toolkit` nor k3s
+are installed on it yet (checked 2026-09-16); `controller/gpu_scheduler/`
+(the piece that would auto-switch `agent` to the 4060 when it's up) is
+written but not deployed to the cluster. `bridge_server.py` remains what's
 actually flashed against; `services/gateway` is a Phase-1 skeleton, not
 wire-protocol compatible with the real firmware yet.
 
