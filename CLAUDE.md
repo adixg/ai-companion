@@ -155,11 +155,15 @@ STT/LLM/TTS/SV boundaries into HTTP services (`services/stt`, `services/agent`,
 controller that retargets the `agent` service's Ollama endpoint to whichever
 GPU node is currently up — the differentiated piece of this track.
 
-**Phase 1 (service split, manifests, controller design) done; nothing yet
-applied to a live cluster** — this dev environment has neither a k3s cluster
-nor a working Docker daemon. `bridge_server.py` remains what's actually
-flashed against; `services/gateway` is a Phase-1 skeleton, not wire-protocol
-compatible with the real firmware yet.
+**Phase 1 (service split, manifests, controller design) done. Phase 2
+(cluster bring-up) started on the home server** (`arch-ssd`, GTX 1650): k3s
+is live there, the containerd→nvidia-container-runtime→RuntimeClass→device-
+plugin GPU chain is verified end to end (including GPU time-slicing, since
+the node has one physical GPU shared by two pods), and `ollama-gtx1650` +
+`stt` are both `Running` with confirmed CUDA access. The RTX 4060 laptop
+hasn't joined as a second node yet. `bridge_server.py` remains what's
+actually flashed against; `services/gateway` is a Phase-1 skeleton, not
+wire-protocol compatible with the real firmware yet.
 
 Full design (service-boundary reasoning, the k3s-vs-alternatives tradeoff,
 node/service placement table, the added-latency cost of splitting a process
