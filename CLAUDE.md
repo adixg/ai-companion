@@ -1,4 +1,4 @@
-# aigf — project state
+# aicompanion — project state
 
 Living notes for this repo. **Update this file (or the relevant `docs/*.md`)
 as part of any change that makes something here wrong** — a new backend, a

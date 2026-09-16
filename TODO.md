@@ -1,4 +1,4 @@
-# aigf — todo
+# aicompanion — todo
 
 Active punch list. See `CLAUDE.md` for current project state and links to
 the detailed `docs/*.md` investigation logs behind each of these.
