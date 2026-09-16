@@ -123,18 +123,24 @@ zombie BLE connections from `am force-stop`) — full chain in the doc below,
 worth reading before touching this code again so none of it gets
 re-discovered from scratch.
 
-**Phase 3 (byte-envelope codec) is in progress.** The wire-format codec
-(`ble_envelope.h` / `BleEnvelopeCodec.kt`) round-trips correctly on real
-hardware (2026-09-16, both TX and RX, including the multi-packet
-continuation path — see `docs/ble-migration.md`). Bonding, the AUTH
-handshake, and TIME_SYNC are the remaining Phase 3 work, next up now that
-the codec itself is verified.
+**Phase 3 (GATT protocol design) is CLOSED (2026-09-16).** The byte-envelope
+codec (`ble_envelope.h` / `BleEnvelopeCodec.kt`), bonding, the app-layer
+shared-secret AUTH handshake, and TIME_SYNC all round-trip correctly
+together on real hardware — see `docs/ble-migration.md` for the full log,
+including three real bugs found and fixed (an Android bond-broadcast
+receiver needing `RECEIVER_EXPORTED` instead of the generally-recommended
+`RECEIVER_NOT_EXPORTED`; `WRITE_ENC` on the RX characteristic reproducibly
+rejected by Android's own stack regardless of retries, fixed by dropping to
+plain `WRITE` since the AUTH frame is the real access-control gate anyway;
+and a stale phone-side bond record after repeated reflashing, needing a
+manual unpair).
 
 **All BLE work so far lives in throwaway spike projects**
 (`firmware/m5stick_ble_flash_spike/`, `android_companion/`) — the real
 `firmware/m5stick_bridge/` hasn't been touched and needs no changes until
-Phase 4 actually merges BLE in. Normal Wi-Fi-based firmware development can
-proceed in parallel with zero interaction with this track.
+Phase 4 (next up: merging BLE into the real firmware) actually merges BLE
+in. Normal Wi-Fi-based firmware development can proceed in parallel with
+zero interaction with this track.
 
 Full log (measured flash-budget tables, the full bug-by-bug debugging arc,
 Android tooling setup in WSL2): **`docs/ble-migration.md`**. Remaining

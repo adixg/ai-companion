@@ -46,22 +46,19 @@ the detailed `docs/*.md` investigation logs behind each of these.
 - **Tools as MCP servers**, not functions wired to one harness (Ollama today),
   so they survive a change of runtime or model without a rewrite.
 
-## BLE transport migration (Phases 3-6)
+## BLE transport migration (Phases 4-6)
 
-Phases 1-2 passed — see `docs/ble-migration.md` for the full log. Remaining,
-per `/home/aditya/.claude/plans/tranquil-drifting-stream.md`:
+Phases 1-3 passed — see `docs/ble-migration.md` for the full log. **Phase 3
+(GATT protocol design) is fully closed**: byte-envelope codec, chunk
+reassembly, bonding, the app-layer shared-secret AUTH handshake, and
+TIME_SYNC are all implemented and confirmed round-tripping together on real
+hardware (2026-09-16) — including three real bugs found and fixed along the
+way (an Android bond-broadcast receiver needing `RECEIVER_EXPORTED`, a
+`WRITE_ENC` characteristic permission Android's stack reproducibly refused
+regardless of retries, and a stale phone-side bond record after repeated
+reflashing). Remaining, per
+`/home/aditya/.claude/plans/tranquil-drifting-stream.md`:
 
-- **Phase 3 — GATT protocol design, in progress.** Byte-envelope codec
-  (frame types for START/STOP/RESET/HEARD/STATUS/REPLY/AUDIO_CHUNK/END/
-  TIME_SYNC/AUTH) and chunk reassembly across multiple physical BLE packets
-  are done, build-checked, and **round-trip confirmed on real hardware
-  (2026-09-16)** — both TX (including the multi-packet continuation path)
-  and RX decode correctly, per `docs/ble-migration.md`. **Still remaining**:
-  bonding + the app-layer shared-secret AUTH handshake, and time-sync (phone
-  writes wall-clock epoch since NTP goes away without Wi-Fi) — deliberately
-  deferred until the codec round-trip itself was confirmed working on
-  hardware, which it now is. Full detail and the direction-split correction to this plan
-  file: `docs/ble-migration.md`.
 - **Phase 4 — merge into `m5stick_bridge`**: rip out `WiFi.h`/
   `WebSocketsClient`, add NimBLE + a new `ble_transport.h`, rewire
   `main.cpp`'s connect/state-machine logic.
