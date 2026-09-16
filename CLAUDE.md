@@ -93,7 +93,15 @@ was removed 2026-09-15 once the real power button's behavior was confirmed.
 
 The event loop must never block during a turn (fixed 2026-09-07) —
 `iter_in_thread()`/`call_in_thread()` in `bridge_server.py` keep the
-WebSocket ping alive while STT/LLM/TTS run in a worker thread.
+WebSocket ping alive while STT/LLM/TTS run in a worker thread. Same
+principle applied on the firmware side (fixed 2026-09-16): `connectNetwork()`
+used to block in `setup()` until BLE connected, so with the phone's
+companion app not running the Stick sat stuck on the connecting screen with
+no way to reach the clock or pomodoro screens — neither of which needs BLE
+at all. It now only kicks off advertising and returns; `loop()` (where
+BtnA's screen-cycling lives) picks up the actual connect completion on its
+own next iteration. Confirmed live: screen cycling now works immediately at
+boot with no phone connected.
 
 **Flashing from WSL2**: the Stick isn't visible to WSL by default — hand it
 over from Windows first:

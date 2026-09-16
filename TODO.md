@@ -5,19 +5,6 @@ the detailed `docs/*.md` investigation logs behind each of these.
 
 ## Firmware / hardware features
 
-- **Screen cycling is blocked until BLE connects — real bug, found live
-  (2026-09-16).** `connectNetwork()` (`firmware/m5stick_bridge/src/main.cpp`)
-  blocks in `while (!BleTransport::ready())` from inside `setup()`, before
-  `loop()` — where all of BtnA's tap-to-cycle-screens handling lives — ever
-  runs. So on a cold boot with no phone connected (app not open, or out of
-  range), the Stick sits on the connecting screen (Rina's face) forever and
-  BtnA does nothing, since that code path is simply never reached. Confirmed
-  live: the owner's Stick got stuck exactly this way with the
-  `android_companion` app closed. Clock and pomodoro don't need BLE at all,
-  so there's no real reason screen cycling should be gated on a connection
-  they don't use — the fix is to move the connect wait off the boot path (or
-  let BtnA cycle screens during it) rather than block. Not yet implemented;
-  needs a real on-device test once written, not just a code read.
 - **Wake word activation** — replace hold-to-talk with a wake word, so
   talking to her doesn't need a button press at all.
 - **IMU gesture sensor** — activate listening when the wrist is raised
