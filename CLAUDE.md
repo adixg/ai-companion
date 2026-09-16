@@ -194,20 +194,29 @@ controller that retargets the `agent` service's Ollama endpoint to whichever
 GPU node is currently up — the differentiated piece of this track.
 
 **Phase 1 (service split, manifests, controller design) done. Phase 2
-(cluster bring-up) started on the home server** (`arch-ssd`, GTX 1650): k3s
+(cluster bring-up) underway on the home server** (`arch-ssd`, GTX 1650): k3s
 is live there, the containerd→nvidia-container-runtime→RuntimeClass→device-
 plugin GPU chain is verified end to end (including GPU time-slicing, since
 the node has one physical GPU shared by two pods), and `ollama-gtx1650`,
 `stt`, `tts`, and `agent` are all `Running` with confirmed CUDA access
 (re-verified live over SSH, 2026-09-16). `agent`'s `OLLAMA_HOST` is
 `http://ollama-gtx1650:11434` — the home server is the only/default target
-right now. The RTX 4060 laptop (this laptop, WSL2/Ubuntu 24.04) hasn't
+right now. Known bug: `tts`'s `/synth` 500s in-cluster (the vits backend
+shells out to a conda path that doesn't exist in its container image) —
+see `TODO.md`. The RTX 4060 laptop (this laptop, WSL2/Ubuntu 24.04) hasn't
 joined as a second node yet, and neither `nvidia-container-toolkit` nor k3s
 are installed on it yet (checked 2026-09-16); `controller/gpu_scheduler/`
 (the piece that would auto-switch `agent` to the 4060 when it's up) is
-written but not deployed to the cluster. `bridge_server.py` remains what's
-actually flashed against; `services/gateway` is a Phase-1 skeleton, not
-wire-protocol compatible with the real firmware yet.
+written but not deployed to the cluster.
+
+**`services/gateway` now has full wire-protocol parity with
+`bridge_server.py`** (2026-09-16) — the real `start`/`stop`/`reset` +
+`heard:`/`status:`/`reply:`/binary-audio/`end` protocol, the in-process
+speaker-verification gate, `announce`, and `encourage_loop` are all ported,
+verified against both a mocked test suite and a live smoke test against the
+real running `stt`/`agent`/`tts` pods. `bridge_server.py` is still what's
+actually flashed against for now — cutting the Stick over to the
+k3s-hosted gateway is the one remaining step, gated on the `tts` bug above.
 
 Full design (service-boundary reasoning, the k3s-vs-alternatives tradeoff,
 node/service placement table, the added-latency cost of splitting a process

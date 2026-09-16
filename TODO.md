@@ -112,18 +112,28 @@ Phase 2 is now underway on the home server, see below.
   `agent` all applied and confirmed `Running` with real GPU access
   (re-verified live over SSH, 2026-09-16 — `agent`'s `OLLAMA_HOST` is
   `http://ollama-gtx1650:11434`, i.e. the home server is today's default and
-  only target). Still open: join the RTX 4060 laptop as a second node and
-  label it `gpu-tier=rtx4060` (use the home server's Tailscale name for
-  `K3S_URL`, not its DHCP LAN IP — see `deploy/kubernetes/README.md`),
-  install `nvidia-container-toolkit` + k3s agent on it (neither installed
-  there yet, confirmed 2026-09-16 — it's Ubuntu 24.04 in WSL2, so `apt`, not
-  `pacman`; GPU passthrough into containerd hasn't been verified under WSL2
+  only target). **Known bug, not yet fixed**: the `tts` pod passes its
+  `/health` readiness probe but `/synth` 500s — `voicepipe/backends/vits.py`'s
+  `WorkerVoice` shells out to `/root/anaconda3/envs/uma-tts/bin/python`, a
+  conda env path that only exists on a dev machine that ran
+  `setup_envs.sh`, not inside `services/tts/Dockerfile`'s plain
+  `python:3.12-slim` image. Needs either a Dockerfile that builds/bundles a
+  real `uma-tts` environment, or a container-friendly non-subprocess VITS
+  path. `services/gateway/` handles this gracefully today (a `/synth`
+  failure still sends `end`, confirmed live), so it's a real gap but not a
+  crash. Still open: join the RTX 4060 laptop as a second node and label it
+  `gpu-tier=rtx4060` (use the home server's Tailscale name for `K3S_URL`,
+  not its DHCP LAN IP — see `deploy/kubernetes/README.md`), install
+  `nvidia-container-toolkit` + k3s agent on it (neither installed there yet,
+  confirmed 2026-09-16 — it's Ubuntu 24.04 in WSL2, so `apt`, not `pacman`;
+  GPU passthrough into containerd hasn't been verified under WSL2
   specifically and needs checking once the node joins), apply
-  `ollama-rtx4060`/`gateway.yaml`, deploy `controller/gpu_scheduler/`
-  (written, not yet run against a live cluster) and confirm it actually
-  retargets `agent` when the 4060 node goes Ready/NotReady, validate
-  `services/gateway`'s Phase-1 `/turn` WS endpoint against a test client.
-  Then chart into `deploy/helm/` and wire `deploy/argocd/` for GitOps sync.
+  `ollama-rtx4060`/`gateway.yaml` (the gateway's code now has real firmware
+  parity, see Phase 5 below, but the manifest itself hasn't been applied to
+  the cluster yet), deploy `controller/gpu_scheduler/` (written, not yet run
+  against a live cluster) and confirm it actually retargets `agent` when
+  the 4060 node goes Ready/NotReady. Then chart into `deploy/helm/` and wire
+  `deploy/argocd/` for GitOps sync.
 - **Phase 3 — observability**: `observability/prometheus/` +
   `observability/grafana/`.
 - **Phase 4 — benchmarks**: `benchmarks/latency/` (split architecture vs.
@@ -132,7 +142,25 @@ Phase 2 is now underway on the home server, see below.
   an assumption) and `benchmarks/gpu_allocation/` (how fast
   `controller/gpu_scheduler/` actually retargets `agent` on a node
   Ready/NotReady transition).
-- **Phase 5 — gateway parity port**: port `bridge_server.py`'s real
-  firmware wire protocol, speaker-verification gate, encouragement loop,
-  and `announce` into `services/gateway/`, then cut the M5StickS3 over from
-  `bridge_server.py` to the k3s-hosted gateway.
+- **Phase 5 — gateway parity port, mostly done (2026-09-16).**
+  `services/gateway/app.py` now speaks the real firmware wire protocol
+  (`start`/`stop`/`reset`, `heard:`/`status:`/`reply:`/binary audio/`end`,
+  ported via a small `_AsgiWebSocketAdapter` so the exact same dispatch
+  logic bridge_server.py uses works against FastAPI's WebSocket), the
+  speaker-verification gate (runs in-process here too -- CPU-only, in the
+  hot path of every utterance, not worth a network round trip), `announce`
+  + its Unix socket, and `encourage_loop` -- all ported with the same
+  behavior and reasoning as bridge_server.py's `Session`, see that module's
+  updated docstring. `voicepipe/wire_audio.py` is new: the ffmpeg
+  resample/normalize step both servers now share, so it can't drift between
+  them. Verified two ways: the mocked unit-test suite
+  (`tests/test_services_gateway.py`, full happy path plus every failure
+  path) and a live smoke test against the real running `stt`/`agent`/`tts`
+  pods (real WebSocket client, real faster-whisper call, correct
+  `reply:(didn't catch that)`/`end` for a non-speech tone). `--enroll` mode
+  was deliberately **not** ported -- enrollment only touches the voiceprint
+  file on disk, so bridge_server.py's existing `--enroll` still works
+  regardless of which server handles live conversations. **Still open**:
+  cutting the actual M5StickS3 over from `bridge_server.py` to the
+  k3s-hosted gateway (needs Phase 2's `tts` bug fixed first, and BLE
+  Phase 6's soak test finished, before this is worth doing for real).
