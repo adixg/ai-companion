@@ -117,7 +117,7 @@ Full detail (the mic-config no-op investigation, the `mouth_closed` sprite
 background bug and its two compounding causes, clock/pomodoro layout and
 button-handling decisions, the BtnB deep-sleep removal): **`docs/firmware-notes.md`**.
 
-## BLE transport migration (Phase 6 remaining)
+## BLE transport migration (reconnect/soak validation remaining)
 
 Motivation: replace the phone's persistent Wi-Fi hotspot (battery/data
 drain) with BLE. ESP32-S3 is BLE-only (no Classic BT), so this is a
@@ -149,9 +149,9 @@ manual unpair).
 **Phase 5 (real Android companion app) is DONE (2026-09-16).**
 `android_companion/` evolved from spike into a real app: `RelayService` is
 a foreground service owning both the BLE central connection and an OkHttp
-WebSocket bridge to `bridge_server.py`'s actual protocol (translating BLE
+WebSocket bridge to the gateway protocol (translating BLE
 frames to/from `start`/`stop`/`reset`/`heard:`/`status:`/`reply:`/binary
-audio/`end`), plus a settings UI (host + secret, persisted), replacing
+audio/`end`), plus a settings UI (host + port + secret, persisted), replacing
 `tools/termux_relay.py`'s job. Two real bugs found and fixed: Android
 blocks cleartext `ws://` by default since API 28 (deliberately allowed, see
 `AndroidManifest.xml`'s comment), and `targetSdk` 36 enforces edge-to-edge
@@ -176,17 +176,20 @@ against the real `bridge_server.py` (not the echo stand-in) over BLE,
 confirmed independently in both the server log (speaker gate accepted at
 0.611/0.661 vs. the 0.6 threshold, correct STT, in-character LLM reply) and
 the Stick's own serial log (`listening... -> Processing -> heard ->
-Generating -> Done`, no drops). **`README.md`'s architecture diagram is
-also updated (2026-09-16)** to show `android_companion/` bridging the Stick's
-BLE connection to `bridge_server.py`, replacing the old Wi-Fi-hotspot +
-`tools/termux_relay.py` picture. **Still remaining**: a soak test
-(hours-long connection, reconnect after BT toggle/reboot/deep-sleep).
+Generating -> Done`, no drops). `README.md` now shows
+`android_companion/` bridging the Stick's BLE connection to the k3s gateway,
+with `bridge_server.py` retained as the standalone fallback. The relay now
+closes stale GATT clients,
+times out stalled scan/handshake stages, reconnects BLE/WebSocket with bounded
+backoff, and synchronously tears down on Stop to make Start → Stop → Start
+reliable. **Still remaining**: install this APK and validate that sequence,
+then run the hours-long/Bluetooth-toggle/reboot/deep-sleep soak tests.
 
 Full log (measured flash-budget tables, the full bug-by-bug debugging arc,
 Android tooling setup in WSL2): **`docs/ble-migration.md`**. Remaining
 phase (6): **`TODO.md`**.
 
-## Home-server deployment (k3s, in progress)
+## Home-server deployment (k3s primary path; device verification pending)
 
 Motivation: this project's purpose is explicitly employability (portfolio
 piece for recruiters), which is why this track favors real infra (k3s, a
@@ -194,15 +197,15 @@ custom controller) over the leaner option a pure personal-use deployment
 would pick. Target hardware is two real, heterogeneous GPU nodes: the home
 server's GTX 1650 (4GB, always on) and this laptop's RTX 4060 (intermittent).
 
-`bridge_server.py` is being split along `voicepipe/registry.py`'s existing
+`bridge_server.py` has been split along `voicepipe/registry.py`'s existing
 STT/LLM/TTS/SV boundaries into HTTP services (`services/stt`, `services/agent`,
 `services/tts`, `services/gateway`), deployed via k3s manifests
 (`deploy/kubernetes/`). `controller/gpu_scheduler/` is a custom Kubernetes
 controller that retargets the `agent` service's Ollama endpoint to whichever
 GPU node is currently up — the differentiated piece of this track.
 
-**Phase 1 (service split, manifests, controller design) done. Phase 2
-(cluster bring-up) underway on both nodes now.** `arch-ssd` (GTX 1650): k3s
+**The service split and cluster core are live on both nodes.** `arch-ssd`
+(GTX 1650): k3s
 live, the containerd→nvidia-container-runtime→RuntimeClass→device-plugin GPU
 chain verified end to end (including GPU time-slicing, since the node has
 one physical GPU shared by two pods), `ollama-gtx1650`/`stt`/`tts`/`agent`
@@ -234,16 +237,18 @@ sessions.
 `heard:`/`status:`/`reply:`/binary-audio/`end` protocol, the in-process
 speaker-verification gate, `announce`, and `encourage_loop` are all ported,
 verified against both a mocked test suite and a live smoke test against the
-real running `stt`/`agent`/`tts` pods. **`gateway.yaml` is now applied and
+real running `stt`/`agent`/`tts` pods. **`gateway.yaml` is applied and
 `Running`** too (2026-09-16), re-verified with the same live wire-protocol
-test against the actual in-cluster pod. `bridge_server.py` is still what's
-actually flashed against for now — cutting the real Stick over to the
-k3s-hosted gateway is the one remaining step, tracked in `TODO.md`.
+test against the actual in-cluster pod. As of 2026-09-18 the Android app
+defaults and one-time migrates to the stable gateway endpoint
+`arch-ssd.tail38f762.ts.net:30800`, and the gateway manifest mounts the
+profile/voiceprint from a Secret. Applying those latest changes and testing
+one real Stick conversation remain before the runtime cutover is verified.
 
 Full design (service-boundary reasoning, the k3s-vs-alternatives tradeoff,
 node/service placement table, the added-latency cost of splitting a process
 into networked services): **`docs/deployment-architecture.md`**. Remaining
-phases (2-5): **`TODO.md`**.
+deployment work: **`TODO.md`**.
 
 ## Architecture reminders
 

@@ -73,7 +73,7 @@ via `ss` showing the live TCP connection.
   the BLE central connection plus an OkHttp WebSocket bridge to
   `bridge_server.py`'s actual protocol (translating BLE frames to/from
   `start`/`stop`/`reset`/`heard:`/`status:`/`reply:`/binary audio/`end`,
-  replacing `tools/termux_relay.py`'s job), a settings UI (host + shared
+  replacing `tools/termux_relay.py`'s job), a settings UI (host + port + shared
   secret, persisted), a "Forget device" shortcut, and a battery-optimization
   exemption request. Confirmed on real hardware: full connect → bond → AUTH
   → WebSocket-to-`tools/echo_server.py` sequence succeeds end to end,
@@ -84,7 +84,8 @@ via `ss` showing the live TCP connection.
   `AndroidManifest.xml`'s comment), and `targetSdk` 36 enforces edge-to-edge
   layout unconditionally, so `WindowCompat.setDecorFitsSystemWindows` is a
   no-op now — fixed with a real `ViewCompat` window-insets listener instead.
-- **Phase 6 — cutover, in progress.** The `tools/echo_server.py` validation
+- **Phase 6 — cutover and reconnect hardening, device validation pending.**
+  The `tools/echo_server.py` validation
   this bullet calls for is done with the *real* firmware on both ends (see
   above). **The real conversation test is now also done (2026-09-16)**: two
   full turns against the actual `bridge_server.py` (not the echo stand-in)
@@ -94,16 +95,20 @@ via `ss` showing the live TCP connection.
   Full log: `docs/ble-migration.md`. **`README.md`'s architecture diagram is
   also updated (2026-09-16)** — the flowchart and layout tree now show
   `android_companion/`'s BLE-central-plus-WebSocket-client bridging the
-  Stick to `bridge_server.py`, in place of the old Wi-Fi-hotspot +
-  `tools/termux_relay.py` path. **Still remaining**: a soak test (hours-long
-  connection, reconnect after BT toggle/reboot/deep-sleep).
+  Stick to the server path. The app now fully closes stale GATT clients,
+  retries scans/handshakes/WebSockets with bounded backoff, and synchronously
+  tears down both transports on Stop so Start → Stop → Start does not reuse a
+  half-stopped service. **Still remaining**: install the updated APK and run
+  the real-device Start → Stop → Start, Bluetooth-toggle, reboot/deep-sleep,
+  and hours-long soak tests.
 
 ## Home-server deployment (k3s across the 1650 and the 4060)
 
 Phase 1 (service split + k8s manifests + GPU-scheduler controller design)
 done — see `docs/deployment-architecture.md` for the full plan and
 `services/`, `deploy/kubernetes/`, `controller/gpu_scheduler/` for the code.
-Phase 2 is now underway on the home server, see below.
+The live cluster core is running; the repository and Android defaults now use
+its gateway as the primary device path, see below.
 
 - **Phase 2 — cluster bring-up**: home server (`arch-ssd`, GTX 1650) done —
   k3s installed and labeled, GPU runtime chain verified (containerd nvidia
@@ -170,7 +175,7 @@ Phase 2 is now underway on the home server, see below.
   an assumption) and `benchmarks/gpu_allocation/` (how fast
   `controller/gpu_scheduler/` actually retargets `agent` on a node
   Ready/NotReady transition).
-- **Phase 5 — gateway parity port, mostly done (2026-09-16).**
+- **Phase 5 — gateway parity and repository cutover, done (2026-09-18).**
   `services/gateway/app.py` now speaks the real firmware wire protocol
   (`start`/`stop`/`reset`, `heard:`/`status:`/`reply:`/binary audio/`end`,
   ported via a small `_AsgiWebSocketAdapter` so the exact same dispatch
@@ -189,7 +194,35 @@ Phase 2 is now underway on the home server, see below.
   was deliberately **not** ported -- enrollment only touches the voiceprint
   file on disk, so bridge_server.py's existing `--enroll` still works
   regardless of which server handles live conversations. `gateway.yaml` is
-  now applied and `Running` too, re-verified with the same wire-protocol
-  test against the actual in-cluster pod. **Still open**: cutting the
-  actual M5StickS3 over from `bridge_server.py` to the k3s-hosted gateway,
-  once BLE Phase 6's soak test is finished too.
+  applied and `Running`, re-verified with the same wire-protocol test against
+  the actual in-cluster pod. The gateway is exposed at NodePort `30800`, the
+  Android app now defaults (and one-time migrates) to the always-on node's
+  stable Tailscale name, and the manifest mounts the profile and voiceprint
+  from a Kubernetes Secret. **Still open**: apply the updated manifest/Secret
+  from a machine with the cluster kubeconfig, install the updated APK, and
+  verify a real conversation plus the BLE soak cases above.
+
+## Next repository improvements
+
+3. **GitOps packaging** — turn `deploy/kubernetes/` into a Helm chart and
+   wire `deploy/argocd/` for declarative image rollout and rollback.
+4. **Observability** — deploy the Prometheus/Grafana work already scaffolded
+   here; expose gateway turn latency, errors, pod readiness, and GPU-routing
+   transitions.
+5. **Measured split-architecture performance** — benchmark the k3s gateway
+   against `bridge_server.py`, plus the controller's 4060-up/4060-down
+   failover time, before treating the added network hops as free.
+6. **Deployment hardening** — pin image digests/tags, add resource requests
+   and limits plus liveness probes, and document a tested rollback procedure.
+7. **Secrets cleanup** — rotate the placeholder BLE shared secret, keep the
+   voiceprint/profile out of images, and document the Kubernetes Secret
+   update procedure.
+8. **LLM serving evaluation** — keep the OpenAI-compatible backend seam, then
+   benchmark Ollama, vLLM, and llama.cpp on the actual 1650/4060 constraints
+   before replacing the serving runtime.
+9. **WSL storage/performance** — move the Ubuntu VHD to D: and make it sparse;
+   Conda-on-DrvFS is functional but makes cold Chatterbox imports slow.
+10. **Android release quality** — add relay lifecycle/instrumented BLE tests,
+    versioned signing, and a repeatable release APK path.
+11. **CI integration coverage** — assemble the Android APK in CI and add a
+    WebSocket gateway integration test alongside the existing unit tests.
