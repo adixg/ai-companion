@@ -5,6 +5,15 @@ the detailed `docs/*.md` investigation logs behind each of these.
 
 ## Firmware / hardware features
 
+- **ENV III HAT integration** — read and report ambient temperature (plus the
+  HAT's humidity and pressure readings); define the Hat2-Bus wiring/I2C
+  address and add the values to the device status protocol.
+- **Battery analysis** — expose battery percentage, charge/discharge state,
+  voltage, and trend through the firmware and companion app; use it for
+  low-battery warnings and to diagnose power draw during audio sessions.
+- **Logo / visual identity refresh** — choose the product logo and update the
+  Android launcher icon, app name/branding, and any matching repository or
+  dashboard assets.
 - **Wake word activation** — replace hold-to-talk with a wake word, so
   talking to her doesn't need a button press at all.
 - **IMU gesture sensor** — activate listening when the wrist is raised
@@ -37,6 +46,11 @@ the detailed `docs/*.md` investigation logs behind each of these.
 
 ## Agent / backend
 
+- **Companion control tools** — expose a deliberately small, authenticated
+  control surface for: (1) switching the active LLM backend/model, with a
+  spoken confirmation and safe fallback if the selected backend is unhealthy;
+  and (2) reading and changing M5StickS3 display brightness and speaker
+  volume, with bounded values and immediate device-side acknowledgement.
 - **Proactive push with a dedicated `say:` message type** — `Session.announce()`
   already works today (confirmed against the real Stick, no firmware change
   needed — see `docs/voice-pipeline.md`), but there's no way for the Stick to
@@ -163,10 +177,11 @@ its gateway as the primary device path, see below.
 
   `gateway.yaml` is applied and `Running` too, confirmed with the same live
   wire-protocol test (see Phase 5 below for the parity work this
-  confirms). Still open: chart into `deploy/helm/` and wire `deploy/argocd/`
-  for GitOps sync; the pod-to-internet-egress bug on the laptop node is a
-  known, separate, not-yet-fixed WSL2 networking gap (harmless now that
-  models are shared rather than pulled in-pod).
+  confirms). Pod-to-public-internet egress on the RTX 4060 node was also
+  directly re-verified from an ephemeral node-pinned pod on 2026-09-18:
+  DNS resolved `registry.ollama.ai` and HTTPS reached it (the bare registry
+  URL's expected 404 made BusyBox `wget` exit nonzero). Still open: chart
+  into `deploy/helm/` and wire `deploy/argocd/` for GitOps sync.
 - **Phase 3 — observability**: `observability/prometheus/` +
   `observability/grafana/`.
 - **Phase 4 — benchmarks**: `benchmarks/latency/` (split architecture vs.
