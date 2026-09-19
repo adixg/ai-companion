@@ -55,6 +55,9 @@ the detailed `docs/*.md` investigation logs behind each of these.
   spoken confirmation and safe fallback if the selected backend is unhealthy;
   and (2) reading and changing M5StickS3 display brightness and speaker
   volume, with bounded values and immediate device-side acknowledgement.
+  The brightness/volume portion is hardware-dependent: implement and validate
+  it only when the M5StickS3 is available, with the Android app and MCP tools
+  sharing the same BLE command path.
 - **Proactive push with a dedicated `say:` message type** — `Session.announce()`
   already works today (confirmed against the real Stick, no firmware change
   needed — see `docs/voice-pipeline.md`), but there's no way for the Stick to
@@ -62,6 +65,19 @@ the detailed `docs/*.md` investigation logs behind each of these.
   dedicated wire message so the UI can show that distinction.
 - **Tools as MCP servers**, not functions wired to one harness (Ollama today),
   so they survive a change of runtime or model without a rewrite.
+- **Run live web-search MCP smoke tests on both Qwen routes** — run
+  `tools/smoke_mcp.py` once with the RTX 4060/Qwen3-8B route active and once
+  after failover to the GTX 1650/Qwen3.5-4B route; confirm both models call
+  `search_web`, include a source URL, and return a grounded answer.
+- **Spotify Connect MCP controls** — add OAuth/PKCE-backed tools for track
+  search, device listing, play/pause/next, and volume control on the phone's
+  Spotify client; require Spotify Premium and explicit confirmation for
+  playback-changing actions. Keep this separate from streaming audio to the
+  M5Stick.
+- **Persistent notes MCP tools** — add restricted `read_notes` and
+  confirmation-gated `append_note` tools backed by a persistent volume on the
+  always-on Arch-SSD node; permit only the notes document, not arbitrary file
+  paths, and include timestamps, size limits, and write tests.
 
 ## BLE transport migration (Phase 6 remaining)
 
