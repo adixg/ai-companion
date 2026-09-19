@@ -221,9 +221,15 @@ its gateway as the primary device path, see below.
 
 3. **GitOps packaging** — turn `deploy/kubernetes/` into a Helm chart and
    wire `deploy/argocd/` for declarative image rollout and rollback.
-4. **Observability** — deploy the Prometheus/Grafana work already scaffolded
-   here; expose gateway turn latency, errors, pod readiness, and GPU-routing
-   transitions.
+4. **Observability dashboard polish** — Prometheus, Grafana, Tempo, and the
+   service `/metrics` endpoints are now deployed. Replace the current
+   functional four-panel dashboard with a useful operations view: summary
+   stats for request rate/error rate and p50/p95 latency, millisecond/second
+   units, sensible axes and thresholds, stable service colors, readable
+   legends, service-health/target-up panels, and separate service and
+   end-to-end voice-pipeline rows. Link slow panels to Tempo traces.
+   Validate it with real M5Stick turns so gateway, STT, agent, and TTS spans
+   all appear together; the agent benchmark alone does not cover that path.
 5. **Measured split-architecture performance** — benchmark the k3s gateway
    against `bridge_server.py`, plus the controller's 4060-up/4060-down
    failover time, before treating the added network hops as free.
@@ -235,9 +241,7 @@ its gateway as the primary device path, see below.
 8. **LLM serving evaluation** — keep the OpenAI-compatible backend seam, then
    benchmark Ollama, vLLM, and llama.cpp on the actual 1650/4060 constraints
    before replacing the serving runtime.
-9. **WSL storage/performance** — move the Ubuntu VHD to D: and make it sparse;
-   Conda-on-DrvFS is functional but makes cold Chatterbox imports slow.
-10. **Android release quality** — add relay lifecycle/instrumented BLE tests,
+9. **Android release quality** — add relay lifecycle/instrumented BLE tests,
     versioned signing, and a repeatable release APK path.
-11. **CI integration coverage** — assemble the Android APK in CI and add a
+10. **CI integration coverage** — assemble the Android APK in CI and add a
     WebSocket gateway integration test alongside the existing unit tests.
