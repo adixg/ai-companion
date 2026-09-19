@@ -14,6 +14,10 @@ the detailed `docs/*.md` investigation logs behind each of these.
 - **Logo / visual identity refresh** — choose the product logo and update the
   Android launcher icon, app name/branding, and any matching repository or
   dashboard assets.
+- **Accurate README screen previews** — replace the current approximate clock
+  and pomodoro SVGs with hardware screenshots or a source-faithful renderer
+  generated from `clock_face.h` and `pomodoro_face.h`; keep the Rina sprite
+  preview synchronized with the firmware visuals.
 - **Wake word activation** — replace hold-to-talk with a wake word, so
   talking to her doesn't need a button press at all.
 - **IMU gesture sensor** — activate listening when the wrist is raised
