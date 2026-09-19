@@ -54,9 +54,8 @@ the detailed `docs/*.md` investigation logs behind each of these.
 - **Proactive push with a dedicated `say:` message type** — `Session.announce()`
   already works today (confirmed against the real Stick, no firmware change
   needed — see `docs/voice-pipeline.md`), but there's no way for the Stick to
-  distinguish an *agent-initiated* proactive push (e.g. Hermes finishing a
-  background tool run) from a normal answer. Add a dedicated wire message so
-  the UI can show that distinction.
+  distinguish an agent-initiated proactive push from a normal answer. Add a
+  dedicated wire message so the UI can show that distinction.
 - **Tools as MCP servers**, not functions wired to one harness (Ollama today),
   so they survive a change of runtime or model without a rewrite.
 

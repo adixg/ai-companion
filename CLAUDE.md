@@ -12,10 +12,7 @@ commands) live in `docs/`, split by topic, because this file is loaded in
 full at the start of *every* Claude Code session regardless of what the
 session is actually about — a 92KB chronological log of old debugging arcs
 was pure context cost on every single session, not something worth paying
-just to keep it all in one file. (Hermes Agent also truncates project
-context past 20K chars, which is how the size problem first got noticed, but
-that's not why this split exists — Hermes isn't part of this project's
-actual pipeline.) See `TODO.md` for the active punch list.
+just to keep it all in one file. See `TODO.md` for the active punch list.
 
 Every number below is measured or fetched, with the date and the command that
 produced it, so it can be re-checked rather than trusted. Anything not
@@ -34,29 +31,6 @@ outright on both size and speed, so prefer it over Turbo.
 
 Full measured tables (STT/TTS latency and VRAM by backend, the Chatterbox
 Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.md`**.
-
-## Local agent runtime (Hermes Agent / OpenClaw)
-
-**Not used for the voice pipeline.** Hermes Agent is installed, configured,
-and works end-to-end (terminal/file tools, memory, real tool execution
-confirmed via a logging proxy) — but local `hermes3:8b` tool-calling tops out
-around **87% in the easiest case**, and the failures are dangerous
-confabulation rather than refusal (invented file contents, fake API
-mechanics, false capability denials indistinguishable from real answers).
-Not good enough to sit behind the Stick unattended.
-
-`voicepipe/backends/hermes_agent.py` (`--llm-backend hermes-agent`) exists
-and works as a plain OpenAI-compatible client, so it's available for anyone
-who wants to point it at a **hosted** model instead — that sidesteps both the
-reliability problem and Hermes Agent's hard-enforced 64K context floor.
-`qwen3:8b` is disqualified from ever being used as the Hermes model
-regardless of quality, since it caps at 40960 context and Hermes refuses to
-start below 64K.
-
-Full investigation (VRAM/KV-cache arithmetic across multiple corrections,
-the tool-calling reliability measurements and every retracted theory along
-the way, the Hermes Agent vs OpenClaw comparison, install/config specifics):
-**`docs/hermes-agent.md`**.
 
 ## Voice pipeline (speaker gate, output volume, announcements, memory)
 
