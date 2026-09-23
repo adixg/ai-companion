@@ -163,6 +163,13 @@ via `ss` showing the live TCP connection.
 
 ## Home-server deployment (k3s across the 1650 and the 4060)
 
+- **arch-ssd memory (2026-09-23)**: limits, priority classes and
+  `tools/lean-mode.sh` are in (see `docs/deployment-architecture.md`'s
+  memory-budget section). Still open: a second 8GB stick (there is one free
+  slot; parts/specs worked out, purchase pending), then growing zram and/or
+  adding a swapfile as a backstop, and reconsidering `tts` (~1.1GB, the
+  largest single pod) if RAM is still tight.
+
 Phase 1 (service split + k8s manifests + GPU-scheduler controller design)
 done — see `docs/deployment-architecture.md` for the full plan and
 `services/`, `deploy/kubernetes/`, `controller/gpu_scheduler/` for the code.
