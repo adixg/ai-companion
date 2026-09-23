@@ -156,8 +156,10 @@ with `bridge_server.py` retained as the standalone fallback. The relay now
 closes stale GATT clients,
 times out stalled scan/handshake stages, reconnects BLE/WebSocket with bounded
 backoff, and synchronously tears down on Stop to make Start → Stop → Start
-reliable. **Still remaining**: install this APK and validate that sequence,
-then run the hours-long/Bluetooth-toggle/reboot/deep-sleep soak tests.
+reliable. This APK (`versionName` 1.0) is installed on the phone
+(owner-confirmed 2026-09-23). **Still remaining**: validate that sequence on
+the device, then run the hours-long/Bluetooth-toggle/reboot/deep-sleep soak
+tests.
 
 Full log (measured flash-budget tables, the full bug-by-bug debugging arc,
 Android tooling setup in WSL2): **`docs/ble-migration.md`**. Remaining

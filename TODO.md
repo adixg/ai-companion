@@ -131,9 +131,10 @@ via `ss` showing the live TCP connection.
   Stick to the server path. The app now fully closes stale GATT clients,
   retries scans/handshakes/WebSockets with bounded backoff, and synchronously
   tears down both transports on Stop so Start → Stop → Start does not reuse a
-  half-stopped service. **Still remaining**: install the updated APK and run
-  the real-device Start → Stop → Start, Bluetooth-toggle, reboot/deep-sleep,
-  and hours-long soak tests.
+  half-stopped service. The updated APK (`versionName` 1.0) is already
+  installed on the phone (owner-confirmed 2026-09-23). **Still remaining**:
+  run the real-device Start → Stop → Start, Bluetooth-toggle,
+  reboot/deep-sleep, and hours-long soak tests.
 
 ## Home-server deployment (k3s across the 1650 and the 4060)
 
@@ -235,9 +236,9 @@ its gateway as the primary device path, see below.
   stable Tailscale name, and the manifest mounts the profile and voiceprint
   from a Kubernetes Secret. The manifest and Secret are applied (verified
   live 2026-09-23: `aicompanion-personal-data` exists and is mounted by the
-  gateway pod, whose `/health` reports the speaker gate on). **Still open**:
-  install the updated APK, and verify a real Stick conversation through the
-  gateway plus the BLE soak cases above.
+  gateway pod, whose `/health` reports the speaker gate on), and the updated
+  APK is installed on the phone. **Still open**: verify a real Stick
+  conversation through the gateway plus the BLE soak cases above.
 
 ## Next repository improvements
 
