@@ -175,36 +175,41 @@ server's GTX 1650 (4GB, always on) and this laptop's RTX 4060 (intermittent).
 STT/LLM/TTS/SV boundaries into HTTP services (`services/stt`, `services/agent`,
 `services/tts`, `services/gateway`), deployed via k3s manifests
 (`deploy/kubernetes/`). `controller/gpu_scheduler/` is a custom Kubernetes
-controller that retargets the `agent` service's Ollama endpoint to whichever
-GPU node is currently up — the differentiated piece of this track.
+controller that retargets the `agent` service's LLM endpoint (`LLM_HOST` +
+`LLM_MODEL`) to whichever GPU node is currently up — the differentiated piece
+of this track. LLM serving there is llama.cpp (`llama-server`, CUDA), migrated
+from Ollama on 2026-09-18 — see `docs/llama-cpp-migration.md`.
 
 **The service split and cluster core are live on both nodes.** `arch-ssd`
 (GTX 1650): k3s
 live, the containerd→nvidia-container-runtime→RuntimeClass→device-plugin GPU
 chain verified end to end (including GPU time-slicing, since the node has
-one physical GPU shared by two pods), `ollama-gtx1650`/`stt`/`tts`/`agent`
+one physical GPU shared by two pods), `llama-cpp-gtx1650`/`stt`/`tts`/`agent`
 all `Running` with confirmed CUDA access. `tts`'s `/synth` 500 (both TTS
 backends assumed a dev machine's conda envs) is **fixed and re-verified
 live** (2026-09-16) — see `TODO.md`.
 
 The RTX 4060 laptop (WSL2/Ubuntu) has **joined as a second node, and the
-whole chain is proven working end to end on it, live (2026-09-16)**: a real
-request round-tripped `gateway` → `agent` → `ollama-rtx4060` (this laptop)
-→ `qwen3:8b` → a real generated reply. Getting here meant finding and
+whole chain is proven working end to end on it, live (2026-09-16, on the
+Ollama-era stack; the live `agent` now points at `llama-cpp-rtx4060` with
+`qwen3-8b`)**: a real request round-tripped `gateway` → `agent` → the 4060
+model on this laptop → a real generated reply. Getting here meant finding and
 fixing a chain of WSL2-specific networking bugs — kopf needing `patch` on
 nodes for its own bookkeeping, `agent`/the controller needing a
 `nodeSelector` to stay off the intermittent node, and (the deep one) both
 k3s's reverse-tunnel and flannel's VXLAN backend defaulting to each node's
 LAN IP instead of its Tailscale address, silently blackholing all
 cross-node pod traffic until `--node-ip`/`--flannel-iface=tailscale0` were
-set on **both** nodes. `agent.yaml` also gained a paired `OLLAMA_MODEL` env
-var the controller now patches alongside `OLLAMA_HOST`, so each node
-requests the model sized for its own card. Full bug-by-bug log: `TODO.md`.
-`ollama-rtx4060` bind-mounts this node's existing native Ollama store
-rather than copying models into the pod — a copy attempt crashed this
-laptop's `C:` drive mid-transfer (only ~25GB was ever really free, not the
-~880GB `df -h` reported from inside WSL2), a lesson now saved for future
-sessions.
+set on **both** nodes. `agent.yaml` carries a paired `LLM_MODEL` env var the
+controller patches alongside `LLM_HOST` (originally `OLLAMA_MODEL`/
+`OLLAMA_HOST`), so each node requests the model sized for its own card
+(`qwen3.5-4b` on the 1650, `qwen3-8b` on the 4060). Full bug-by-bug log:
+`TODO.md`. Each llama.cpp server keeps its own native-Linux GGUF cache
+hostPath. Disk caution learned the hard way: a 20GB model copy crashed this
+laptop's `C:` drive mid-transfer on 2026-09-16 (only ~25GB was really free,
+not the ~880GB `df -h` reported from inside WSL2 — check real free space
+from Windows PowerShell). Conda and the npm/pip/HF caches have since moved
+to `D:` (`/mnt/d/wsl-cache`), and `C:` now has ~91GB free.
 
 **`services/gateway` now has full wire-protocol parity with
 `bridge_server.py`** (2026-09-16) — the real `start`/`stop`/`reset` +

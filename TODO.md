@@ -201,8 +201,9 @@ its gateway as the primary device path, see below.
   DNS resolved `registry.ollama.ai` and HTTPS reached it (the bare registry
   URL's expected 404 made BusyBox `wget` exit nonzero). Still open: chart
   into `deploy/helm/` and wire `deploy/argocd/` for GitOps sync.
-- **Phase 3 — observability**: `observability/prometheus/` +
-  `observability/grafana/`.
+- **Phase 3 — observability**: deployed and `Running` in the cluster
+  (Prometheus, Grafana, Tempo, kube-state-metrics, DCGM exporter on both
+  GPU nodes; verified 2026-09-23). Dashboard polish is item 4 below.
 - **Phase 4 — benchmarks**: `benchmarks/latency/` (split architecture vs.
   the `bridge_server.py` monolith — the service split adds network hops on
   a latency-sensitive path, so this needs a real measured comparison, not
@@ -232,9 +233,11 @@ its gateway as the primary device path, see below.
   the actual in-cluster pod. The gateway is exposed at NodePort `30800`, the
   Android app now defaults (and one-time migrates) to the always-on node's
   stable Tailscale name, and the manifest mounts the profile and voiceprint
-  from a Kubernetes Secret. **Still open**: apply the updated manifest/Secret
-  from a machine with the cluster kubeconfig, install the updated APK, and
-  verify a real conversation plus the BLE soak cases above.
+  from a Kubernetes Secret. The manifest and Secret are applied (verified
+  live 2026-09-23: `aicompanion-personal-data` exists and is mounted by the
+  gateway pod, whose `/health` reports the speaker gate on). **Still open**:
+  install the updated APK, and verify a real Stick conversation through the
+  gateway plus the BLE soak cases above.
 
 ## Next repository improvements
 
@@ -257,9 +260,10 @@ its gateway as the primary device path, see below.
 7. **Secrets cleanup** — rotate the placeholder BLE shared secret, keep the
    voiceprint/profile out of images, and document the Kubernetes Secret
    update procedure.
-8. **LLM serving evaluation** — keep the OpenAI-compatible backend seam, then
-   benchmark Ollama, vLLM, and llama.cpp on the actual 1650/4060 constraints
-   before replacing the serving runtime.
+8. **LLM serving evaluation** — the runtime has already moved to llama.cpp
+   behind the OpenAI-compatible seam (`docs/llama-cpp-migration.md`, live).
+   Still open: the latency/VRAM measurement that doc requires before deleting
+   the retained Ollama model data, and a vLLM comparison if it's still wanted.
 9. **Android release quality** — add relay lifecycle/instrumented BLE tests,
     versioned signing, and a repeatable release APK path.
 10. **CI integration coverage** — assemble the Android APK in CI and add a
