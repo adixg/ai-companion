@@ -167,8 +167,18 @@ via `ss` showing the live TCP connection.
   `tools/lean-mode.sh` are in (see `docs/deployment-architecture.md`'s
   memory-budget section). Still open: a second 8GB stick (there is one free
   slot; parts/specs worked out, purchase pending), then growing zram and/or
-  adding a swapfile as a backstop, and reconsidering `tts` (~1.1GB, the
-  largest single pod) if RAM is still tight.
+  adding a swapfile as a backstop, and reducing `tts` (1.6Gi at start, up to
+  2.8Gi during synthesis, the largest pod by far) if RAM is still tight.
+- **Speaker gate fails open in the cluster (found 2026-09-23, not fixed)**:
+  the gateway image has no `curl`, and `voicepipe/backends/wespeaker.py`'s
+  `ensure_model()` downloads its ONNX model by shelling out to `curl`, so every
+  utterance logs `speaker check failed, letting it through ... 'curl'` and is
+  accepted. A synthetic voice passed as the owner. `/health` still reports
+  `gate: true`, because that only means a voiceprint is loaded, not that the
+  model is. Fix: download with `urllib` instead of `curl` (no external
+  binary), and bake the model into the image or a volume so it is not fetched
+  from Hugging Face on every pod start; make `/health` report whether the model
+  loaded. Also consider whether a failed check should reject rather than allow.
 
 Phase 1 (service split + k8s manifests + GPU-scheduler controller design)
 done — see `docs/deployment-architecture.md` for the full plan and
