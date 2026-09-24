@@ -40,6 +40,11 @@ Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.
   {ask,allow}` handles clips under ~2s, which can't be embedded reliably;
   currently run with `allow` at the owner's request (a real, deliberate hole
   for sub-2s clips).
+  A failed check (model missing, embedding crashed) now **refuses** the
+  utterance with a neutral line instead of letting it through
+  (`--speaker-on-error {reject,allow}`, default `reject`): it used to fail open,
+  and in the cluster the gateway silently accepted every voice for lack of
+  `curl` (fixed 2026-09-23, see `TODO.md` for the rollout status).
 - **Output is normalized** (ffmpeg `speechnorm`, on by default) — the
   amplifier was already maxed (`setVolume(255)`) but the signal reaching it
   wasn't, at -18.1 dB mean before normalizing. `255` is above M5Stack's own

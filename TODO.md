@@ -169,16 +169,21 @@ via `ss` showing the live TCP connection.
   slot; parts/specs worked out, purchase pending), then growing zram and/or
   adding a swapfile as a backstop, and reducing `tts` (1.6Gi at start, up to
   2.8Gi during synthesis, the largest pod by far) if RAM is still tight.
-- **Speaker gate fails open in the cluster (found 2026-09-23, not fixed)**:
-  the gateway image has no `curl`, and `voicepipe/backends/wespeaker.py`'s
-  `ensure_model()` downloads its ONNX model by shelling out to `curl`, so every
-  utterance logs `speaker check failed, letting it through ... 'curl'` and is
-  accepted. A synthetic voice passed as the owner. `/health` still reports
-  `gate: true`, because that only means a voiceprint is loaded, not that the
-  model is. Fix: download with `urllib` instead of `curl` (no external
-  binary), and bake the model into the image or a volume so it is not fetched
-  from Hugging Face on every pod start; make `/health` report whether the model
-  loaded. Also consider whether a failed check should reject rather than allow.
+- **Speaker gate failed open in the cluster (found and fixed in code 2026-09-23;
+  cluster rollout still to verify)**: the gateway image has no `curl` and
+  `ensure_model()` downloaded its ONNX model by shelling out to it, so every
+  utterance logged `speaker check failed, letting it through` and was
+  accepted; a synthetic voice passed as the owner, and `/health` still said
+  `gate: true`. Fixed: the model is downloaded with `urllib` (verified against
+  the real URL, 24.9MB in 1.2s), baked into the gateway image at build time
+  (`VOICEPIPE_CACHE_DIR=/opt/voicepipe`), a failed check now **refuses** with a
+  neutral line (`CHECK_FAILED`; `--speaker-on-error allow` restores the old
+  behaviour), the gateway loads the model at start-up, and `/health` reports
+  `speaker_gate.ready` separately from `gate`. Verified locally against the real
+  model and your real voiceprint: the synthetic voice scores 0.084 against the
+  0.6 threshold and is rejected. **Still to do**: push so CI rebuilds
+  `aicompanion-gateway`, roll the gateway out, and confirm `/health` shows
+  `speaker_gate.ready: true` and that the synthetic-voice turn is now refused.
 
 Phase 1 (service split + k8s manifests + GPU-scheduler controller design)
 done — see `docs/deployment-architecture.md` for the full plan and
