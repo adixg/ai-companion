@@ -82,12 +82,6 @@ the detailed `docs/*.md` investigation logs behind each of these.
   `Failed to export traces to tempo:4317 ... UNAVAILABLE` (2026-09-24), so
   per-stage traces for real turns are probably missing.
 
-- **Chatterbox Rina voice clone** — run a one-off Chatterbox synthesis using
-  the 10-second ElevenLabs reference converted to `/tmp/rina-reference.wav`;
-  test the cloned output on the RTX 4060, compare it with VITS, and decide
-  whether to keep it as a selectable local TTS voice. Do this on the Arch
-  host with CUDA available; the WSL environment currently cannot access the
-  GPU.
 - **Companion control tools** — expose a deliberately small, authenticated
   control surface for: (1) switching the active LLM backend/model, with a
   spoken confirmation and safe fallback if the selected backend is unhealthy;
@@ -103,10 +97,6 @@ the detailed `docs/*.md` investigation logs behind each of these.
   dedicated wire message so the UI can show that distinction.
 - **Tools as MCP servers**, not functions wired to one harness (Ollama today),
   so they survive a change of runtime or model without a rewrite.
-- **LangGraph orchestration** — introduce LangGraph as the agent workflow
-  layer now that tools are exposed through MCP: define explicit state,
-  tool-call routing, retries, confirmations, and terminal answer paths while
-  keeping the model server and MCP servers replaceable.
 - **Run live web-search MCP smoke tests on both Qwen routes** — run
   `tools/smoke_mcp.py` once with the RTX 4060/Qwen3-8B route active and once
   after failover to the GTX 1650/Qwen3.5-4B route; confirm both models call
