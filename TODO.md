@@ -177,15 +177,16 @@ via `ss` showing the live TCP connection.
   slot; parts/specs worked out, purchase pending), then growing zram and/or
   adding a swapfile as a backstop, and reducing `tts` (1.6Gi at start, up to
   2.8Gi during synthesis, the largest pod by far) if RAM is still tight.
-- **Speaker-gate margin is thin, and its metrics are not deployed yet
-  (2026-09-24)**: the owner's scores through the Stick are 0.611, 0.661 and
+- **Speaker-gate margin is thin; its metrics are deployed (2026-09-24)**: the owner's scores through the Stick are 0.611, 0.661 and
   0.610 against a 0.6 threshold (strangers 0.07-0.28, a synthetic voice 0.084),
   so a slightly worse take rejects the owner. Options: re-enrol through the
   Stick (the voiceprint's 10 samples predate the BLE path) and/or lower the
-  threshold to ~0.5. Separately, per-verdict logging plus
-  `aicompanion_gateway_speaker_*` metrics and the dashboard's `speaker` panel
-  are written and tested but need CI to rebuild the gateway image and a rollout
-  before there is data.
+  threshold to ~0.5. The owner chose to leave it and watch. Per-verdict
+  logging, the `aicompanion_gateway_speaker_*` metrics and the dashboard's
+  `speaker` panel are deployed and verified live (a synthetic-voice turn showed
+  up as `rejected`, score 0.084, in the gateway log, the metrics, Prometheus
+  and the panel); the panel flags it when most acceptances land within 0.1 of
+  the threshold, so the margin question can now be answered from real data.
 - **Speaker gate failed open in the cluster (found, fixed and verified live
   2026-09-23)**: the gateway image has no `curl` and
   `ensure_model()` downloaded its ONNX model by shelling out to it, so every
