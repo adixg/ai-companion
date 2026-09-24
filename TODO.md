@@ -311,7 +311,7 @@ its gateway as the primary device path, see below.
   URL's expected 404 made BusyBox `wget` exit nonzero). Still open: chart
   into `deploy/helm/` and wire `deploy/argocd/` for GitOps sync.
 - **Phase 3 — observability**: deployed and `Running` in the cluster
-  (Prometheus, Grafana, Tempo, kube-state-metrics, DCGM exporter on both
+  (Prometheus, Grafana, Tempo, kube-state-metrics, GPU exporter on both
   GPU nodes; verified 2026-09-23). Dashboard polish is item 4 below.
 - **Phase 4 — benchmarks**: `benchmarks/latency/` (split architecture vs.
   the `bridge_server.py` monolith — the service split adds network hops on
