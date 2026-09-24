@@ -29,6 +29,14 @@ consumer of the two (Turbo ~4x whisper's VRAM); when using it,
 Nano-on-CUDA (`--chatterbox-nano`, 1857 MiB, 1.18s latency) beats Turbo
 outright on both size and speed, so prefer it over Turbo.
 
+**CPU STT/TTS via sherpa-onnx** (2026-09-24): `--stt-backend parakeet|moonshine`
+and `--tts-backend kokoro-onnx|kitten`, switched live with
+`tools/switch-backend.sh` (which also sets the memory limit). On arch-ssd,
+STT is 0.18-0.23 s against whisper's 3.3 s, and `kokoro-onnx` (the same af_bella
+voice, fp32) peaks at ~1.35 GiB where PyTorch Kokoro OOMs at 3 GiB. The
+manifests still default to whisper and PyTorch Kokoro; the live cluster was
+left patched to moonshine + kokoro-onnx on 2026-09-24.
+
 Full measured tables (STT/TTS latency and VRAM by backend, the Chatterbox
 Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.md`**.
 
