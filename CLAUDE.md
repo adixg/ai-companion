@@ -49,8 +49,9 @@ Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.
   0.536). Owner scores
   0.765-0.895 when the voiceprint was enrolled, a stranger 0.069-0.075 — but
   **through the Stick over BLE the owner has scored only 0.611, 0.661 (2026-09-16)
-  and 0.610 (2026-09-24, a 2.91s clip)**, i.e. a margin of ~0.01 over the
-  threshold, so a slightly worse take would lock the owner out. A synthetic
+  and 0.610 (2026-09-24, a 2.91s clip)**. Fixed 2026-09-24: 23 real Stick clips added
+  (`tools/voiceprint_add.py`, 33 samples now), lifting held-out owner clips from
+  0.52-0.69 (mean 0.61) to 0.59+ (mean 0.70) while a synthetic voice stays at 0.12. A synthetic
   voice scores 0.084. Re-enrolling through the Stick or a lower threshold (0.5
   still leaves a wide gap to strangers) would widen it; not yet done. `--short-utterances
   {ask,allow}` handles clips under ~2s, which can't be embedded reliably;

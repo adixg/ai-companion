@@ -215,7 +215,7 @@ via `ss` showing the live TCP connection.
   Stick (the voiceprint's 10 samples predate the BLE path) and/or lower the
   threshold to ~0.5. The owner chose to leave it and watch -- until 2026-09-24, when a turn scored 0.536 and was
   rejected; the gateway now runs `--speaker-threshold=0.5`. Adding real Stick samples: `--keep-utterances` + `tools/voiceprint_add.py`
-  (see `docs/voice-pipeline.md`); written 2026-09-24, waiting on a rollout and the owner's clips. Per-verdict
+  (see `docs/voice-pipeline.md`); done 2026-09-24: 23 clips added (33 samples), held-out owner mean 0.61 -> 0.70. Per-verdict
   logging, the `aicompanion_gateway_speaker_*` metrics and the dashboard's
   `speaker` panel are deployed and verified live (a synthetic-voice turn showed
   up as `rejected`, score 0.084, in the gateway log, the metrics, Prometheus
