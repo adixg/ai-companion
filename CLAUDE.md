@@ -36,7 +36,12 @@ Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.
 
 - **Speaker verification** gates replies to the enrolled owner's voice
   (WeSpeaker ECAPA-TDNN-512 ONNX, `--speaker-threshold 0.6`). Owner scores
-  0.765-0.895, a stranger 0.069-0.075 — wide margin. `--short-utterances
+  0.765-0.895 when the voiceprint was enrolled, a stranger 0.069-0.075 — but
+  **through the Stick over BLE the owner has scored only 0.611, 0.661 (2026-09-16)
+  and 0.610 (2026-09-24, a 2.91s clip)**, i.e. a margin of ~0.01 over the
+  threshold, so a slightly worse take would lock the owner out. A synthetic
+  voice scores 0.084. Re-enrolling through the Stick or a lower threshold (0.5
+  still leaves a wide gap to strangers) would widen it; not yet done. `--short-utterances
   {ask,allow}` handles clips under ~2s, which can't be embedded reliably;
   currently run with `allow` at the owner's request (a real, deliberate hole
   for sub-2s clips).
@@ -46,6 +51,10 @@ Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.
   and in the cluster the gateway silently accepted every voice for lack of
   `curl` (fixed and verified live 2026-09-23: the synthetic voice is now refused at
   score 0.084).
+  Every verdict is logged (`speaker verdict=… score=… threshold=… audio=…s`)
+  and exported to Prometheus (`aicompanion_gateway_speaker_*`), including
+  `unverified` for utterances answered without being scored; `tools/obs_tui.py`
+  has a `speaker` panel for it.
 - **Output is normalized** (ffmpeg `speechnorm`, on by default) — the
   amplifier was already maxed (`setVolume(255)`) but the signal reaching it
   wasn't, at -18.1 dB mean before normalizing. `255` is above M5Stack's own
