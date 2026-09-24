@@ -18,6 +18,7 @@
 # About me
 
 - Name: Aditya.
+- Home: Atlanta, Georgia (use this for weather and anything local unless I name another place).
 
 <!-- ## How I like to be talked to
      e.g. "Keep it to one or two sentences." "Don't apologise, just fix it."
