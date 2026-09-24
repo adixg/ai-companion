@@ -202,7 +202,9 @@ STT/LLM/TTS/SV boundaries into HTTP services (`services/stt`, `services/agent`,
 `services/tts`, `services/gateway`), deployed via k3s manifests
 (`deploy/kubernetes/`). `controller/gpu_scheduler/` is a custom Kubernetes
 controller that retargets the `agent` service's LLM endpoint (`LLM_HOST` +
-`LLM_MODEL`) to whichever GPU node is currently up — the differentiated piece
+`LLM_MODEL`) to whichever GPU node is currently up, and scales the 1650's standby
+LLM server to zero while the 4060 serves (60s debounce; `tools/standby.sh warm`
+pins it; written 2026-09-24, deployment pending) — the differentiated piece
 of this track. LLM serving there is llama.cpp (`llama-server`, CUDA), migrated
 from Ollama on 2026-09-18 — see `docs/llama-cpp-migration.md`.
 
