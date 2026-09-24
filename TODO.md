@@ -132,9 +132,10 @@ via `ss` showing the live TCP connection.
   retries scans/handshakes/WebSockets with bounded backoff, and synchronously
   tears down both transports on Stop so Start → Stop → Start does not reuse a
   half-stopped service. The updated APK (`versionName` 1.0) is already
-  installed on the phone (owner-confirmed 2026-09-23). **Still remaining**:
-  run the real-device Start → Stop → Start, Bluetooth-toggle,
-  reboot/deep-sleep, and hours-long soak tests.
+  installed on the phone (owner-confirmed 2026-09-23). **Done
+  (owner-verified 2026-09-23)**: Start → Stop → Start and a Bluetooth toggle
+  both reconnect correctly on the real device. **Still remaining**:
+  reboot/deep-sleep reconnect and the hours-long soak.
 
 ## Home-server deployment (k3s across the 1650 and the 4060)
 
