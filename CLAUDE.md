@@ -44,7 +44,8 @@ Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.
   utterance with a neutral line instead of letting it through
   (`--speaker-on-error {reject,allow}`, default `reject`): it used to fail open,
   and in the cluster the gateway silently accepted every voice for lack of
-  `curl` (fixed 2026-09-23, see `TODO.md` for the rollout status).
+  `curl` (fixed and verified live 2026-09-23: the synthetic voice is now refused at
+  score 0.084).
 - **Output is normalized** (ffmpeg `speechnorm`, on by default) — the
   amplifier was already maxed (`setVolume(255)`) but the signal reaching it
   wasn't, at -18.1 dB mean before normalizing. `255` is above M5Stack's own
