@@ -5,6 +5,12 @@ the detailed `docs/*.md` investigation logs behind each of these.
 
 ## Firmware / hardware features
 
+- **Settings + OTA over BLE: flash once over USB, then verify on the device**
+  (written 2026-09-24). Flash `firmware/m5stick_bridge` over USB (new partition
+  table), install app 1.2, then check: version shown in the app; volume and
+  brightness sliders apply and survive a reboot; an OTA of a rebuilt image
+  succeeds (version changes) and its time; an OTA with a wrong-secret image rolls
+  back. See `docs/firmware-notes.md`.
 - **Play reply audio as it arrives (firmware) — written 2026-09-24, compiles
   (71.6% flash), NOT yet flashed or heard on the device.** `handleBleFrame` used
   to buffer every `FRAME_AUDIO_CHUNK` and call `playRaw` only on `FRAME_END`, so

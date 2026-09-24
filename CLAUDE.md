@@ -103,6 +103,12 @@ BtnA's screen-cycling lives) picks up the actual connect completion on its
 own next iteration. Confirmed live: screen cycling now works immediately at
 boot with no phone connected.
 
+**Volume/brightness are live settings and firmware updates go over BLE**
+from the companion app (written 2026-09-24, compiles, **not yet run on the
+device**): needs one more USB flash to switch to the two-slot partition table,
+then updates are over Bluetooth with automatic rollback. Details:
+`docs/firmware-notes.md`.
+
 **Flashing from WSL2**: the Stick isn't visible to WSL by default — hand it
 over from Windows first:
 
