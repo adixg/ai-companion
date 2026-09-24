@@ -42,10 +42,9 @@ the detailed `docs/*.md` investigation logs behind each of these.
 - **Logo / visual identity refresh** — choose the product logo and update the
   Android launcher icon, app name/branding, and any matching repository or
   dashboard assets.
-- **Accurate README screen previews** — replace the current approximate clock
-  and pomodoro SVGs with hardware screenshots or a source-faithful renderer
-  generated from `clock_face.h` and `pomodoro_face.h`; keep the Rina sprite
-  preview synchronized with the firmware visuals.
+- **Accurate README screen previews — DONE 2026-09-24**: the README shows
+  screen captures from the M5StickS3 (`assets/screens/*-device.*`). Keep the
+  Rina sprite preview synchronized with the firmware visuals.
 - **Wake word activation** — replace hold-to-talk with a wake word, so
   talking to her doesn't need a button press at all.
 - **IMU gesture sensor** — activate listening when the wrist is raised
@@ -85,11 +84,11 @@ the detailed `docs/*.md` investigation logs behind each of these.
   agent route (4060, warm, STT + LLM): LLM step **14.8 s → 2.2 s p50**, turn
   without TTS **17.9 s → 5.4 s p50**. Opt out with `LLM_THINKING_SWITCH=0`
   for strict hosted endpoints.
-- **TTS pod OOM-killed under ordinary load — found, not fixed.** The
-  deployed Kokoro `tts` (3 GiB limit) was OOM-killed twice on 2026-09-24
-  after three to four sequential `/synth` calls, memory climbing per request
-  (~1.4 GiB → 2.2 GiB → killed). Real conversations go through the same
-  service. Find the per-request growth before just raising the limit.
+- **TTS pod OOM-killed under ordinary load — resolved 2026-09-24 by changing
+  backend.** PyTorch Kokoro (3 GiB limit) was OOM-killed after three to four
+  `/synth` calls. `tts` now runs KittenTTS nano via sherpa-onnx (559 MiB peak,
+  768 MiB limit); `kokoro-onnx` (same af_bella voice) settles at ~1.35 GiB.
+  The PyTorch backend's per-request growth itself was never investigated.
 - **`llama-cpp-gtx1650` OOM-killed at its 2 GiB limit -- fixed 2026-09-24.**
   Found by another session: killed mid-request during a benchmark turn, then
   `503 Loading model` while it reloaded; the limit came from the arch-ssd memory
@@ -103,9 +102,11 @@ the detailed `docs/*.md` investigation logs behind each of these.
   agent uses the laptop's LLM (scaling it to 0 while the 4060 is up would
   recover that at the cost of a slower failover), and the second RAM stick is
   still the real fix.
-- **STT slower than expected** (not memory: its cgroup shows 0.27s of memory stall in 17h) — ~3.1 s p50 per short utterance in-cluster
-  versus 0.33 s measured standalone on the same GTX 1650. Likely GPU
-  time-slicing contention with `llama-cpp-gtx1650`, or a CPU fallback; check.
+- **STT slower than expected — resolved 2026-09-24 by changing backend.**
+  faster-whisper measured 3.13 s p50 in-cluster (n=50) against 0.33 s
+  standalone; `stt` now runs Moonshine on CPU, 0.19 s p50 (n=50,
+  `benchmarks/runs/pipeline/`). Why whisper was slow on the 1650 (GPU
+  time-slicing with `llama-cpp-gtx1650`, or a CPU fallback) was not checked.
 - **Tempo unreachable from services** — `tts` logs repeated
   `Failed to export traces to tempo:4317 ... UNAVAILABLE` (2026-09-24), so
   per-stage traces for real turns are probably missing.
@@ -378,5 +379,6 @@ its gateway as the primary device path, see below.
    the retained Ollama model data, and a vLLM comparison if it's still wanted.
 9. **Android release quality** — add relay lifecycle/instrumented BLE tests,
     versioned signing, and a repeatable release APK path.
-10. **CI integration coverage** — assemble the Android APK in CI and add a
-    WebSocket gateway integration test alongside the existing unit tests.
+10. **CI integration coverage** — CI assembles the Android APK (since
+    2026-09-24); still missing a WebSocket gateway integration test alongside
+    the existing unit tests.
