@@ -20,8 +20,9 @@ verified is labelled as such.
 
 ## Hardware budget
 
-**NVIDIA RTX 4060 Laptop GPU, 8188 MiB total** (WSL2). **Default TTS backend
-is VITS-Umamusume** (`--tts-backend vits`, speaker id 10 = Grass Wonder),
+**NVIDIA RTX 4060 Laptop GPU, 8188 MiB total** (WSL2). **The desktop entrypoints'
+(`chat_loop.py`, `bridge_server.py`) default TTS backend is VITS-Umamusume**
+(`--tts-backend vits`; the cluster runs Kitten, see below), speaker id 10 = Grass Wonder),
 0 MiB VRAM, runs on CPU, ~1.35s latency — changed 2026-09-16 from Chatterbox
 at the owner's request. Chatterbox (voice cloning from a reference clip,
 `--tts-backend chatterbox`) is still available and is the larger GPU
@@ -36,7 +37,11 @@ STT is 0.18-0.23 s against whisper's 3.3 s, and `kokoro-onnx` (the same af_bella
 voice, fp32) peaks at ~1.35 GiB where PyTorch Kokoro OOMs at 3 GiB. The
 manifests default to **moonshine + kitten** (since 2026-09-24, the lightest
 and fastest pair). Speaker verification is separate (WeSpeaker, in the
-gateway) and unaffected by the STT choice.
+gateway) and unaffected by the STT choice. On the **GTX 1650** (idle while the
+4060 serves the LLM), Kokoro measured 9.0x realtime via sherpa-onnx CUDA (858 MiB
+anon RAM) and 22x via PyTorch (1.37 GiB): not deployed yet, see
+`docs/hardware-budget.md`. GPU metrics come from our own NVML exporter,
+`services/gpu_exporter` (37 MiB, replaced dcgm-exporter's ~405 MiB on 2026-09-24).
 
 Full measured tables (STT/TTS latency and VRAM by backend, the Chatterbox
 Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.md`**.
