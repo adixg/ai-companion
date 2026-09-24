@@ -5,6 +5,15 @@ the detailed `docs/*.md` investigation logs behind each of these.
 
 ## Firmware / hardware features
 
+- **Play reply audio as it arrives (firmware)** — `handleBleFrame` in
+  `firmware/m5stick_bridge/src/main.cpp` buffers every `FRAME_AUDIO_CHUNK`
+  into `replyBuf` and only calls `playRaw` on `FRAME_END`, so the gateway's
+  sentence-at-a-time `_speak` (2026-09-24) cannot lower time-to-first-sound
+  yet: the Stick waits for the whole reply either way. Needs a firmware change
+  to start playback after the first chunk(s) and queue the rest. Watch for
+  underruns: if TTS is slower than real time (kokoro-onnx measured 0.7x on
+  2026-09-24, right after a pod start), playback would gap between sentences.
+  The gateway records `first_audio` in `aicompanion_gateway_stage_duration_seconds`.
 - **ENV III HAT integration** — read and report ambient temperature (plus the
   HAT's humidity and pressure readings); define the Hat2-Bus wiring/I2C
   address and add the values to the device status protocol.
