@@ -50,23 +50,25 @@ the detailed `docs/*.md` investigation logs behind each of these.
 
 ## Agent / backend
 
-- **Slow turns: the agent ignores `think=False` — measured, not fixed.**
-  The gateway sends `think=False`, but
-  `voicepipe/backends/openai_compatible.py` drops the flag ("no portable
-  field"), so Qwen3 reasons on every turn. llama.cpp returns that reasoning
-  in `reasoning_content`, so `strip_think` never sees it; the wait is simply
-  hidden. Measured with `benchmarks/pipeline/bench_turn.py` (2026-09-24): the
-  live agent route takes 14.8 s p50 for the LLM step versus 1.8 s calling the
-  4060's llama.cpp directly with `chat_template_kwargs:
-  {"enable_thinking": false}` (13.3 s vs 1.3 s on one prompt with thinking on
-  vs off). Fix: send that kwarg when `think` is False (configurable, since
-  strict hosted OpenAI endpoints reject unknown fields), then re-measure. The
-  MCP path also forces a non-streaming full answer, which adds to it.
+- **Slow turns: the agent ignored `think=False` — fixed and re-measured
+  (2026-09-24).** `voicepipe/backends/openai_compatible.py` now sends
+  `chat_template_kwargs.enable_thinking` (commit `2151781`), so Qwen3 no
+  longer reasons on every turn. Same benchmark before/after on the live
+  agent route (4060, warm, STT + LLM): LLM step **14.8 s → 2.2 s p50**, turn
+  without TTS **17.9 s → 5.4 s p50**. Opt out with `LLM_THINKING_SWITCH=0`
+  for strict hosted endpoints.
 - **TTS pod OOM-killed under ordinary load — found, not fixed.** The
   deployed Kokoro `tts` (3 GiB limit) was OOM-killed twice on 2026-09-24
   after three to four sequential `/synth` calls, memory climbing per request
   (~1.4 GiB → 2.2 GiB → killed). Real conversations go through the same
   service. Find the per-request growth before just raising the limit.
+- **`llama-cpp-gtx1650` OOM-killed at its 2 GiB limit — found, not fixed.**
+  Killed mid-request on 2026-09-24 while serving a benchmark turn, then
+  unavailable (`503 Loading model`) while it reloaded. The limit came from
+  `a66f566` (arch-ssd memory guardrails); `arch-ssd` has 7 GiB RAM with ~1 GiB
+  free, so the TTS and LLM limits are competing for the same headroom.
+  Decide the budget per pod (or move load off the box) rather than raising
+  limits one crash at a time.
 - **STT slower than expected** — ~3.1 s p50 per short utterance in-cluster
   versus 0.33 s measured standalone on the same GTX 1650. Likely GPU
   time-slicing contention with `llama-cpp-gtx1650`, or a CPU fallback; check.
