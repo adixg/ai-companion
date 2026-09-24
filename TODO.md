@@ -200,7 +200,8 @@ via `ss` showing the live TCP connection.
   0.610 against a 0.6 threshold (strangers 0.07-0.28, a synthetic voice 0.084),
   so a slightly worse take rejects the owner. Options: re-enrol through the
   Stick (the voiceprint's 10 samples predate the BLE path) and/or lower the
-  threshold to ~0.5. The owner chose to leave it and watch. Per-verdict
+  threshold to ~0.5. The owner chose to leave it and watch -- until 2026-09-24, when a turn scored 0.536 and was
+  rejected; the gateway now runs `--speaker-threshold=0.5`. Re-enrolling through the Stick is still open. Per-verdict
   logging, the `aicompanion_gateway_speaker_*` metrics and the dashboard's
   `speaker` panel are deployed and verified live (a synthetic-voice turn showed
   up as `rejected`, score 0.084, in the gateway log, the metrics, Prometheus

@@ -44,7 +44,9 @@ Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.
 ## Voice pipeline (speaker gate, output volume, announcements, memory)
 
 - **Speaker verification** gates replies to the enrolled owner's voice
-  (WeSpeaker ECAPA-TDNN-512 ONNX, `--speaker-threshold 0.6`). Owner scores
+  (WeSpeaker ECAPA-TDNN-512 ONNX, `--speaker-threshold 0.6` by default; **the
+  cluster gateway runs 0.5** since 2026-09-24, after the owner was rejected at
+  0.536). Owner scores
   0.765-0.895 when the voiceprint was enrolled, a stranger 0.069-0.075 — but
   **through the Stick over BLE the owner has scored only 0.611, 0.661 (2026-09-16)
   and 0.610 (2026-09-24, a 2.91s clip)**, i.e. a margin of ~0.01 over the
