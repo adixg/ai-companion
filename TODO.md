@@ -161,6 +161,13 @@ cluster. Ordered by batch; within a batch, by severity.
   Rina sprite preview synchronized with the firmware visuals.
 - **Wake word activation** — replace hold-to-talk with a wake word, so
   talking to her doesn't need a button press at all.
+  Endpointing (when to stop listening) is done: on-device VAD behind BtnB hold
+  (`vad.h`, 2026-09-24; tune on the device). Next: microWakeWord on the Stick
+  starting that same hands-free mode. Power: the firmware already never sleeps
+  and keeps the mic on while idle, so a wake word likely adds only ~5-20 mA of
+  compute (estimate, unmeasured; the Stick can't read its own current). The
+  bigger lever is letting `loop()` light-sleep / lower the clock. Measure by
+  battery rundown per build (OTA makes that cheap).
 - **IMU gesture sensor** — activate listening when the wrist is raised
   (M5StickS3 has an onboard IMU already; this is a firmware gesture-detection
   feature, not new hardware).

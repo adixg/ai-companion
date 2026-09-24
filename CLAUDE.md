@@ -95,7 +95,11 @@ Catppuccin pixel-art **clock** (set from the phone's `TIME_SYNC` BLE frame on
 connect; no battery-backed RTC on this board, so time is unset after a cold
 boot until the phone connects), and a
 **pomodoro timer** (50 min focus / 10 min break, BtnB click starts/pauses,
-BtnB double-click resets). Powering the device fully off is the **physical
+BtnB double-click resets). **BtnB hold** starts hands-free listening: an
+on-device endpointer (`vad.h`, loudness vs. an adaptive noise floor, 0.8 s
+hangover, host-tested in `tests/test_firmware_vad.py`) starts the turn on speech
+and ends it on quiet; nothing is sent until speech (written 2026-09-24,
+thresholds not yet tuned on the device). Powering the device fully off is the **physical
 power button** (double-click it — confirmed PMIC-level power-off per
 M5Stack's docs); BtnB no longer has a software deep-sleep substitute, that
 was removed 2026-09-15 once the real power button's behavior was confirmed.
