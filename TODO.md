@@ -3,6 +3,120 @@
 Active punch list. See `CLAUDE.md` for current project state and links to
 the detailed `docs/*.md` investigation logs behind each of these.
 
+## Code review findings (2026-09-24) — not started
+
+From a three-part read-only review (Python runtime, infra/CI, device side).
+Each item below was checked against the code, and where marked, the live
+cluster. Ordered by batch; within a batch, by severity.
+
+### Batch 1 — security and privacy
+- **gpu-exporter can read every pod's logs, including transcripts** (verified
+  from inside the pod: group 0 reads `/var/log/pods/*/gateway/0.log`, mode
+  0640). `supplementalGroups: [0]` was only meant to list pod names. Fix: map
+  PID -> pod via `/proc/<pid>/cgroup` (pod UID) plus a read-only pod list from
+  the API (narrow RBAC), then drop the `/var/log/pods` mount and group 0.
+- **Gateway WebSocket has no auth and the NodePort listens on the LAN too**
+  (verified: `http://10.0.0.20:30800/health` -> 200), with `--short-utterances=allow`
+  and the MCP write tools (`set_stick_volume`/`brightness`) live. Fix: require
+  the app's shared secret on the WS handshake (`hmac.compare_digest`); start k3s
+  with `--kube-proxy-arg=nodeport-addresses=100.64.0.0/10`; switch short clips
+  back to `ask` (the manifest comment's own condition, tools that act, is met);
+  reject a second concurrent connection instead of letting it replace the Stick.
+- **BLE auth is one static, replayable secret guarding unsigned OTA.** The phone
+  connects to any advertiser of the service UUID and sends it the secret; the
+  Stick never checks `isEncrypted()`; OTA checks only size + MD5; the placeholder
+  secret is the default in `Prefs.kt` and `secrets.h.example`. Fix: pin the
+  bonded address; drop RX writes on unencrypted links; HMAC challenge-response;
+  sign OTA images (ed25519 key in firmware); refuse the placeholder secret; on
+  the Stick, disconnect a link that hasn't AUTHed in ~10 s (today one idle
+  connection locks the owner out and guesses are unlimited).
+- **CI publishes images even when tests fail, and pods always pull `:latest`.**
+  `docker-build` has `needs: changes` only. Fix: `needs: [changes, test]`; tag
+  `:${{ github.sha }}` and deploy by SHA/digest with `IfNotPresent` (also avoids
+  `ErrImagePull` on a reboot while GHCR/internet is down); pin llama.cpp and
+  searxng by digest; top-level `permissions: {contents: read}`; pin third-party
+  actions by SHA.
+- **Grafana admin password is `admin` in the public repo** (and resets on every
+  restart, no PVC). Fix: Secret via `GF_SECURITY_ADMIN_PASSWORD__FILE`, or
+  anonymous Viewer with login disabled.
+
+### Batch 2 — crashes and hangs
+- **Firmware race: BLE callback vs `loop()`** on different cores. `handleBleFrame`
+  runs from `RxCharCB::onWrite` and mutates `captionText` (Arduino String),
+  `replyLen`/`queuedOff`/`playbackStarted` (can underflow `pending` in
+  `pumpPlayback` and play past `replyBuf`) and `uiState`. Fix: the callback only
+  queues frames (FreeRTOS queue/stream buffer); `loop()` handles them, as
+  `StickSettings`/`OtaUpdate` already do.
+- **App race: OkHttp callbacks mutate the BLE send queue off the main thread**
+  (`RelayService` `onMessage` -> `enqueueFrame`). Fix: `handler.post { ... }` in
+  every `WebSocketListener` callback.
+- **One bad MCP tool call hangs every later tool call** (reproduced: `get_time`
+  with a bad timezone). Server replies `"id": null` on unexpected exceptions;
+  `mcp_stdio._read_response` skips it and blocks forever holding the lock. Fix:
+  catch everything in `tools/call` and reply with the real id; catch
+  `ValueError` in `current_time` and `OSError`/`HTTPException` in `fetch_json`;
+  client read deadline + respawn; return malformed tool arguments to the model
+  instead of failing the turn.
+- **Conversation history is never trimmed**: ~1.6k tokens of system prompt,
+  profile and tool schemas before any history, against the 1650's 4096 context
+  (a failover mid-conversation turns every reply into "(llm error)"). Fix: keep
+  system + last N turns within a budget sized for the smaller model.
+- **gpu-scheduler robustness**: `read_state()` throws on a missing Deployment
+  (failover silently stops); no `_request_timeout` while holding the lock; no
+  liveness probe; `@kopf.on.delete` left a finalizer on both nodes (verified) so
+  `kubectl delete node` hangs without the controller; RollingUpdate can run two
+  controllers. Fix: 404 = "down", timeouts, `@kopf.on.probe` + livenessProbe,
+  drop `on.delete`/use `on.event`, remove `patch nodes`, `strategy: Recreate`.
+- **Gateway `reset` mid-turn can delete the persona** (turns run as tasks; a
+  failed LLM call then pops the system prompt). **Recording buffer is unbounded**
+  (start without stop can OOM the 384Mi gateway). Fix: snapshot the history list
+  per turn; cap the buffer (~2 MB).
+- **Stick can sit on "thinking" or "updating" forever**: no THINKING timeout
+  (lost STOP, gateway down, oversized REPLY silently dropped by `encodeFrame`
+  past 4096 bytes); no OTA stall timeout on the Stick and the phone's `failOta`
+  doesn't tell it. Fix: timeouts, retry control frames, OTA_ABORT frame, truncate
+  text frames on a UTF-8 boundary and log encode failures.
+
+### Batch 3 — operations and reproducibility
+- **Can't rebuild the cluster from the repo**: k3s flags (`--flannel-iface`,
+  `--node-ip`), node labels, k3s version and the `searxng-secret` creation aren't
+  captured. Fix: a documented `/etc/rancher/k3s/config.yaml` per node + secret
+  commands in `deploy/kubernetes/README.md`.
+- **Live drift**: `llama-cpp-rtx4060` runs `--ctx-size 65536` live vs 40960 in
+  the manifest (next apply silently shrinks it); the Grafana dashboard ConfigMap
+  update (VRAM by pod, clock/throttle panels) isn't applied.
+- **Prometheus and Tempo use RollingUpdate on RWO PVCs** (two writers briefly
+  share the TSDB/WAL; seen live). Fix: `strategy: Recreate`, Prometheus
+  readinessProbe.
+- **STT still requests `nvidia.com/gpu`** though Moonshine is CPU, forcing
+  Recreate (STT outage on every rollout). Fix: drop it; let
+  `switch-backend.sh`'s whisper preset add it back.
+- **LLM routing restarts `agent`**, and applying `agent.yaml` fights the
+  controller. Fix: one `llm` Service whose selector the controller patches, same
+  `--alias` on both servers.
+- **Speaker gate fails open silently** if the voiceprint is missing/corrupt in
+  the Secret. Fix: loud log, readiness fails with a `--require-voiceprint` flag.
+- `voiceprint_add.py`'s `MIN_SCORE = 0.4` is below the live 0.5 threshold; raise
+  it to at least the threshold. STT's `async` handler blocks the event loop
+  (make it `def`). Unmatched URLs create unbounded Prometheus label series
+  (use `"<unmatched>"`). OTA marks an image valid on the first AUTH (wait for a
+  full turn).
+
+### Batch 4 — nice to have
+- Temp-file hygiene (`mkdtemp` per gateway session never removed, `mktemp`,
+  ffmpeg return code ignored in `wire_audio.py`); TTS lock around `synth`;
+  ElevenLabs temp files leak.
+- Turn logic duplicated between `bridge_server.py` and the gateway (already
+  drifted); extract the shared parts into `voicepipe/`.
+- An announcement right after a reply cuts off the reply's buffered tail
+  (gateway's lock releases on "end" sent, not played); interrupts don't reach the
+  phone/gateway, so stale audio queues ahead of the next turn.
+- CI: apply `observability/` manifests in the kind job, test on Python 3.12
+  (images use it), smoke-test more images, add `services/__init__.py` to path
+  filters, stop rebuilding the three CUDA TTS images on every `voicepipe/`
+  change, path-filter the firmware/Android jobs. Cleartext `ws://` allowed for
+  any host in the app (restrict to `*.ts.net`/100.64.0.0/10).
+
 ## Firmware / hardware features
 
 - **Settings + OTA over BLE — DONE, verified on the device 2026-09-24.**
