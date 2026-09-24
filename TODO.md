@@ -192,10 +192,17 @@ via `ss` showing the live TCP connection.
   `tools/lean-mode.sh` are in (see `docs/deployment-architecture.md`'s
   memory-budget section). The idle standby `llama-cpp-gtx1650` is now scaled
   to 0 by the gpu_scheduler while the 4060 serves (~1 GiB RAM, 3.4 GiB VRAM
-  freed; Grafana and Tempo are back on). Still open: a second 8GB stick (there is one free
-  slot; parts/specs worked out, purchase pending), then growing zram and/or
-  adding a swapfile as a backstop, and reducing `tts` (1.6Gi at start, up to
-  2.8Gi during synthesis, the largest pod by far) if RAM is still tight.
+  freed; Grafana and Tempo are back on). **Disk swapfile done (2026-09-24)**: 4 GiB
+  `/swapfile` at priority 10 (zram is 100, so disk is only used once zram is
+  full), persisted in `/etc/fstab`. Still open:
+  - **Grow zram to `ram`** (owner will do it): in `/etc/systemd/zram-generator.conf`
+    change `zram-size = ram / 2` to `zram-size = ram`, then reboot (restarting
+    `systemd-zram-setup@zram0` live flushes everything in zram back into RAM at
+    once). Measured compression is 3.3:1 zstd (1,171 MiB stored in 350 MiB), so a
+    full 7.6 GiB zram would cost ~2.3 GiB of RAM. Check with `swapon --show`.
+  - A second 8GB stick (one free slot; parts/specs worked out, purchase pending).
+  - Reducing `tts` if RAM is still tight (the deployed Kitten backend is ~560 MiB,
+    far below the old PyTorch Kokoro's 2.8 GiB).
 - **Speaker-gate margin is thin; its metrics are deployed (2026-09-24)**: the owner's scores through the Stick are 0.611, 0.661 and
   0.610 against a 0.6 threshold (strangers 0.07-0.28, a synthetic voice 0.084),
   so a slightly worse take rejects the owner. Options: re-enrol through the
