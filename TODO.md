@@ -62,14 +62,20 @@ the detailed `docs/*.md` investigation logs behind each of these.
   after three to four sequential `/synth` calls, memory climbing per request
   (~1.4 GiB → 2.2 GiB → killed). Real conversations go through the same
   service. Find the per-request growth before just raising the limit.
-- **`llama-cpp-gtx1650` OOM-killed at its 2 GiB limit — found, not fixed.**
-  Killed mid-request on 2026-09-24 while serving a benchmark turn, then
-  unavailable (`503 Loading model`) while it reloaded. The limit came from
-  `a66f566` (arch-ssd memory guardrails); `arch-ssd` has 7 GiB RAM with ~1 GiB
-  free, so the TTS and LLM limits are competing for the same headroom.
-  Decide the budget per pod (or move load off the box) rather than raising
-  limits one crash at a time.
-- **STT slower than expected** — ~3.1 s p50 per short utterance in-cluster
+- **`llama-cpp-gtx1650` OOM-killed at its 2 GiB limit -- fixed 2026-09-24.**
+  Found by another session: killed mid-request during a benchmark turn, then
+  `503 Loading model` while it reloaded; the limit came from the arch-ssd memory
+  guardrails. Measured properly (cgroup sampled once a second through load and
+  four generations): total peaks ~2.0 GiB at load but 1.76 GiB of that is GGUF
+  page cache; real (anon) memory is ~0.6 GiB after load and ~1.06 GiB after a
+  long generation and does not shrink. Limit is now 3 GiB with a 1 GiB request.
+  The budget is now measured for every pod on the node (table in
+  `docs/deployment-architecture.md`), and a test stops any limit dropping to a
+  measured peak. Not solved: the standby copy costs ~0.7-1 GiB of RAM while the
+  agent uses the laptop's LLM (scaling it to 0 while the 4060 is up would
+  recover that at the cost of a slower failover), and the second RAM stick is
+  still the real fix.
+- **STT slower than expected** (not memory: its cgroup shows 0.27s of memory stall in 17h) — ~3.1 s p50 per short utterance in-cluster
   versus 0.33 s measured standalone on the same GTX 1650. Likely GPU
   time-slicing contention with `llama-cpp-gtx1650`, or a CPU fallback; check.
 - **Tempo unreachable from services** — `tts` logs repeated
