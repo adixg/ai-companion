@@ -107,9 +107,9 @@ own next iteration. Confirmed live: screen cycling now works immediately at
 boot with no phone connected.
 
 **Volume/brightness are live settings and firmware updates go over BLE**
-from the companion app (written 2026-09-24, compiles, **not yet run on the
-device**): needs one more USB flash to switch to the two-slot partition table,
-then updates are over Bluetooth with automatic rollback. Details:
+from the companion app (app 1.2), **verified on the device 2026-09-24**: the
+Stick is on the two-slot partition table, an OTA takes ~30 s (~75 KB/s), and a
+wrong-secret image rolled back by itself at 600 s. Details:
 `docs/firmware-notes.md`.
 
 **Flashing from WSL2**: the Stick isn't visible to WSL by default — hand it

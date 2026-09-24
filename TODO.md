@@ -5,14 +5,19 @@ the detailed `docs/*.md` investigation logs behind each of these.
 
 ## Firmware / hardware features
 
-- **Settings + OTA over BLE: flash once over USB, then verify on the device**
-  (written 2026-09-24). Flash `firmware/m5stick_bridge` over USB (new partition
-  table), install app 1.2, then check: version shown in the app; volume and
-  brightness sliders apply and survive a reboot; an OTA of a rebuilt image
-  succeeds (version changes) and its time; an OTA with a wrong-secret image rolls
-  back. See `docs/firmware-notes.md`.
-- **Play reply audio as it arrives (firmware) — written 2026-09-24, compiles
-  (71.6% flash), NOT yet flashed or heard on the device.** `handleBleFrame` used
+- **Settings + OTA over BLE — DONE, verified on the device 2026-09-24.**
+  USB-flashed `a36b55d` (new partition table; bond and settings survived),
+  app 1.2 installed. Version shown in the app; volume/brightness applied live
+  and survived a reboot; an OTA of a rebuilt image took ~30 s for 2.27 MB
+  (~75 KB/s) and booted from the other slot; a wrong-secret image was
+  REJECTED at AUTH and rolled back by itself at exactly 600 s. See
+  `docs/firmware-notes.md`.
+- **Play reply audio as it arrives (firmware) — flashed and verified
+  2026-09-24**, together with the fix that made it work (phone → Stick audio
+  as write-without-response, app 1.1+; it had arrived at ~12 KB/s against 32
+  KB/s of playback): a 19.6 s reply started 1.8 s after its text, fully
+  arrived in 9.2 s, zero underruns (serial `[audio]` lines). Still unchecked:
+  a BtnA interrupt mid-reply and the 10 s stall give-up. Original notes: `handleBleFrame` used
   to buffer every `FRAME_AUDIO_CHUNK` and call `playRaw` only on `FRAME_END`, so
   the gateway's sentence-at-a-time `_speak` could not lower time-to-first-sound.
   `pumpPlayback()` in `main.cpp` now starts playback once 1.5s is buffered,
