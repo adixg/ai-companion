@@ -127,7 +127,11 @@ from-scratch GATT protocol + a new Android companion app. Full plan:
 **Phase 1 (flash budget) and Phase 2 (throughput) both PASSED.** BLE-only
 end state projects to 78.0% flash (22% headroom); measured sustained
 throughput is **396-408 kbps**, counted on the Android side, comfortably
-clearing the ~256 kbps target. Getting there took finding and fixing five
+clearing the ~256 kbps target. That was Stick → phone (notifications) only.
+Phone → Stick, the direction reply audio travels, used acknowledged writes
+and measured **~12 KB/s against the speaker's 32 KB/s**, which made every
+reply choppy. Fixed 2026-09-24 (app 1.1 + firmware): audio frames go as
+write-without-response, **~69 KB/s**, a 19.6 s reply with zero underruns. Getting there took finding and fixing five
 real bugs (an Android `BluetoothGatt` operation-queue race, a deprecated
 write API, NimBLE ATT resource exhaustion, a silent value-length cap, and
 zombie BLE connections from `am force-stop`) — full chain in the doc below,
@@ -182,8 +186,8 @@ with `bridge_server.py` retained as the standalone fallback. The relay now
 closes stale GATT clients,
 times out stalled scan/handshake stages, reconnects BLE/WebSocket with bounded
 backoff, and synchronously tears down on Stop to make Start → Stop → Start
-reliable. This APK (`versionName` 1.0) is installed on the phone
-(owner-confirmed 2026-09-23). **Start → Stop → Start and a Bluetooth toggle
+reliable. APK `versionName` 1.1 (write-without-response audio) is installed
+on the phone (via adb, 2026-09-24). **Start → Stop → Start and a Bluetooth toggle
 both reconnect correctly on the real device** (owner-verified 2026-09-23).
 **Still remaining**: reboot/deep-sleep reconnect and the hours-long soak.
 
