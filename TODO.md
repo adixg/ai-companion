@@ -186,7 +186,9 @@ via `ss` showing the live TCP connection.
 
 - **arch-ssd memory (2026-09-23)**: limits, priority classes and
   `tools/lean-mode.sh` are in (see `docs/deployment-architecture.md`'s
-  memory-budget section). Still open: a second 8GB stick (there is one free
+  memory-budget section). The idle standby `llama-cpp-gtx1650` is now scaled
+  to 0 by the gpu_scheduler while the 4060 serves (~1 GiB RAM, 3.4 GiB VRAM
+  freed; Grafana and Tempo are back on). Still open: a second 8GB stick (there is one free
   slot; parts/specs worked out, purchase pending), then growing zram and/or
   adding a swapfile as a backstop, and reducing `tts` (1.6Gi at start, up to
   2.8Gi during synthesis, the largest pod by far) if RAM is still tight.
