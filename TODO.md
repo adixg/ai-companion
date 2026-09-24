@@ -5,15 +5,19 @@ the detailed `docs/*.md` investigation logs behind each of these.
 
 ## Firmware / hardware features
 
-- **Play reply audio as it arrives (firmware)** — `handleBleFrame` in
-  `firmware/m5stick_bridge/src/main.cpp` buffers every `FRAME_AUDIO_CHUNK`
-  into `replyBuf` and only calls `playRaw` on `FRAME_END`, so the gateway's
-  sentence-at-a-time `_speak` (2026-09-24) cannot lower time-to-first-sound
-  yet: the Stick waits for the whole reply either way. Needs a firmware change
-  to start playback after the first chunk(s) and queue the rest. Watch for
-  underruns: if TTS is slower than real time (kokoro-onnx measured 0.7x on
-  2026-09-24, right after a pod start), playback would gap between sentences.
-  The gateway records `first_audio` in `aicompanion_gateway_stage_duration_seconds`.
+- **Play reply audio as it arrives (firmware) — written 2026-09-24, compiles
+  (71.6% flash), NOT yet flashed or heard on the device.** `handleBleFrame` used
+  to buffer every `FRAME_AUDIO_CHUNK` and call `playRaw` only on `FRAME_END`, so
+  the gateway's sentence-at-a-time `_speak` could not lower time-to-first-sound.
+  `pumpPlayback()` in `main.cpp` now starts playback once 0.3s is buffered and
+  queues later audio into the speaker's second slot; `replyBuf` no longer grows
+  once playback starts (the speaker reads it in place). To verify after
+  flashing: first sound arrives before the `end` frame (serial log), no gap
+  between sentences on a fast TTS, an interrupt (BtnA) mid-reply drops the rest,
+  and a 10s stall gives up instead of hanging in "Speaking". If TTS is slower
+  than real time (kokoro-onnx measured 0.6-0.8x on 2026-09-24), expect audible
+  gaps between sentences. The gateway records `first_audio` in
+  `aicompanion_gateway_stage_duration_seconds`.
 - **ENV III HAT integration** — read and report ambient temperature (plus the
   HAT's humidity and pressure readings); define the Hat2-Bus wiring/I2C
   address and add the values to the device status protocol.
