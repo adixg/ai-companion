@@ -107,9 +107,13 @@ the detailed `docs/*.md` investigation logs behind each of these.
   standalone; `stt` now runs Moonshine on CPU, 0.19 s p50 (n=50,
   `benchmarks/runs/pipeline/`). Why whisper was slow on the 1650 (GPU
   time-slicing with `llama-cpp-gtx1650`, or a CPU fallback) was not checked.
-- **Tempo unreachable from services** — `tts` logs repeated
-  `Failed to export traces to tempo:4317 ... UNAVAILABLE` (2026-09-24), so
-  per-stage traces for real turns are probably missing.
+- **Tracing works; one trace per Stick connection, not per turn.** Re-checked
+  2026-09-24: gateway/stt/agent/tts all export (no errors in 30 min, 100+
+  traces/hour each), and a real session's trace joins gateway -> stt -> agent
+  -> tts. The earlier `Failed to export traces ... UNAVAILABLE` was Tempo paused
+  or restarting. Flaw: the WebSocket session is the parent span, so every turn
+  of a connection lands in one trace (one had 18 turns over 26 min). Give each
+  turn its own root span (STT -> agent -> TTS), linked to the session.
 
 - **Companion control tools** — expose a deliberately small, authenticated
   control surface for: (1) switching the active LLM backend/model, with a
