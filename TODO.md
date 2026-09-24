@@ -9,9 +9,13 @@ the detailed `docs/*.md` investigation logs behind each of these.
   (71.6% flash), NOT yet flashed or heard on the device.** `handleBleFrame` used
   to buffer every `FRAME_AUDIO_CHUNK` and call `playRaw` only on `FRAME_END`, so
   the gateway's sentence-at-a-time `_speak` could not lower time-to-first-sound.
-  `pumpPlayback()` in `main.cpp` now starts playback once 0.3s is buffered and
-  queues later audio into the speaker's second slot; `replyBuf` no longer grows
-  once playback starts (the speaker reads it in place). To verify after
+  `pumpPlayback()` in `main.cpp` now starts playback once 1.5s is buffered,
+  waits for 1s more after running dry mid-reply (BLE is only ~1.5x realtime, so
+  playing each scrap sounds like stuttering) and queues audio into the speaker's
+  second slot; `replyBuf` is a fixed 2 MB (the first cut's 200 KB would have
+  truncated replies over ~6s once playback had started) because the speaker reads
+  it in place. Gateway side measured 2026-09-24: a 20s reply was fully sent
+  within 6.4s with no shortfall, so any stutter is BLE/phone/firmware. To verify after
   flashing: first sound arrives before the `end` frame (serial log), no gap
   between sentences on a fast TTS, an interrupt (BtnA) mid-reply drops the rest,
   and a 10s stall gives up instead of hanging in "Speaking". If TTS is slower
