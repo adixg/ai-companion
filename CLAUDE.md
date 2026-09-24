@@ -54,9 +54,11 @@ Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.
   0.52-0.69 (mean 0.61) to 0.59+ (mean 0.70) while a synthetic voice stays at 0.12. A synthetic
   voice scores 0.084. Re-enrolling through the Stick or a lower threshold (0.5
   still leaves a wide gap to strangers) would widen it; not yet done. `--short-utterances
-  {ask,allow}` handles clips under ~2s, which can't be embedded reliably;
-  currently run with `allow` at the owner's request (a real, deliberate hole
-  for sub-2s clips).
+  {ask,allow}` handles clips under 2s, which can't be embedded reliably (cut to
+  1.5s, 6 of 23 owner clips score under 0.5; at 2.0s none do, measured
+  2026-09-24). The cluster gateway runs `allow` at the owner's request (set in
+  `gateway.yaml` 2026-09-24; before that it silently ran the `ask` default): a
+  real, deliberate hole for sub-2s clips, to close before adding tools that act.
   A failed check (model missing, embedding crashed) now **refuses** the
   utterance with a neutral line instead of letting it through
   (`--speaker-on-error {reject,allow}`, default `reject`): it used to fail open,
