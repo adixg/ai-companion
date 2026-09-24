@@ -56,9 +56,8 @@ Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.
   **through the Stick over BLE the owner has scored only 0.611, 0.661 (2026-09-16)
   and 0.610 (2026-09-24, a 2.91s clip)**. Fixed 2026-09-24: 23 real Stick clips added
   (`tools/voiceprint_add.py`, 33 samples now), lifting held-out owner clips from
-  0.52-0.69 (mean 0.61) to 0.59+ (mean 0.70) while a synthetic voice stays at 0.12. A synthetic
-  voice scores 0.084. Re-enrolling through the Stick or a lower threshold (0.5
-  still leaves a wide gap to strangers) would widen it; not yet done. `--short-utterances
+  0.52-0.69 (mean 0.61) to 0.59+ (mean 0.70) while a synthetic voice (0.084 before)
+  stays at 0.12. A full re-enrollment through the Stick hasn't been done. `--short-utterances
   {ask,allow}` handles clips under 2s, which can't be embedded reliably (cut to
   1.5s, 6 of 23 owner clips score under 0.5; at 2.0s none do, measured
   2026-09-24). The cluster gateway runs `allow` at the owner's request (set in
@@ -75,9 +74,10 @@ Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.
   `unverified` for utterances answered without being scored; `tools/obs_tui.py`
   has a `speaker` panel for it.
 - **Output is normalized** (ffmpeg `speechnorm`, on by default) — the
-  amplifier was already maxed (`setVolume(255)`) but the signal reaching it
-  wasn't, at -18.1 dB mean before normalizing. `255` is above M5Stack's own
-  ≤191 battery guidance; watch for brownouts.
+  amplifier was at max (`setVolume(255)`) but the signal reaching it
+  wasn't, at -18.1 dB mean before normalizing. Volume is now a live setting
+  from the app (default 255, above M5Stack's ≤191 battery guidance; lower it
+  in the app if brownout reboots appear).
 - **Proactive announcements** (`Session.announce`, `tools/say.py`) and a
   static **encouragement loop** (`--encourage`) both work with **no firmware
   change** — the wire protocol never checks who started a turn.
@@ -91,8 +91,9 @@ normalization numbers, announcement locking): **`docs/voice-pipeline.md`**.
 ## Firmware (`firmware/m5stick_bridge/`)
 
 Three screens, cycled by **BtnA tap** (hold still talks): Rina's face, a
-Catppuccin pixel-art **clock** (NTP-synced, no battery-backed RTC on this
-board so time is unset after a cold boot until Wi-Fi lands), and a
+Catppuccin pixel-art **clock** (set from the phone's `TIME_SYNC` BLE frame on
+connect; no battery-backed RTC on this board, so time is unset after a cold
+boot until the phone connects), and a
 **pomodoro timer** (50 min focus / 10 min break, BtnB click starts/pauses,
 BtnB double-click resets). Powering the device fully off is the **physical
 power button** (double-click it — confirmed PMIC-level power-off per
@@ -200,8 +201,8 @@ with `bridge_server.py` retained as the standalone fallback. The relay now
 closes stale GATT clients,
 times out stalled scan/handshake stages, reconnects BLE/WebSocket with bounded
 backoff, and synchronously tears down on Stop to make Start → Stop → Start
-reliable. APK `versionName` 1.1 (write-without-response audio) is installed
-on the phone (via adb, 2026-09-24). **Start → Stop → Start and a Bluetooth toggle
+reliable. APK `versionName` 1.2 (settings + OTA over BLE; write-without-response
+audio since 1.1) is installed on the phone (2026-09-24). **Start → Stop → Start and a Bluetooth toggle
 both reconnect correctly on the real device** (owner-verified 2026-09-23).
 **Still remaining**: reboot/deep-sleep reconnect and the hours-long soak.
 
@@ -209,7 +210,7 @@ Full log (measured flash-budget tables, the full bug-by-bug debugging arc,
 Android tooling setup in WSL2): **`docs/ble-migration.md`**. Remaining
 phase (6): **`TODO.md`**.
 
-## Home-server deployment (k3s primary path; device verification pending)
+## Home-server deployment (k3s primary path, live)
 
 Motivation: this project's purpose is explicitly employability (portfolio
 piece for recruiters), which is why this track favors real infra (k3s, a
@@ -233,7 +234,8 @@ from Ollama on 2026-09-18 — see `docs/llama-cpp-migration.md`.
 live, the containerd→nvidia-container-runtime→RuntimeClass→device-plugin GPU
 chain verified end to end (including GPU time-slicing, since the node has
 one physical GPU shared by two pods), `llama-cpp-gtx1650`/`stt`/`tts`/`agent`
-all `Running` with confirmed CUDA access. `tts`'s `/synth` 500 (both TTS
+all `Running` with confirmed CUDA access at bring-up (2026-09-16); today
+`stt`/`tts` run on CPU and `llama-cpp-gtx1650` is scaled to 0 while the 4060 serves. `tts`'s `/synth` 500 (both TTS
 backends assumed a dev machine's conda envs) is **fixed and re-verified
 live** (2026-09-16) — see `TODO.md`.
 
@@ -269,8 +271,8 @@ real running `stt`/`agent`/`tts` pods. **`gateway.yaml` is applied and
 test against the actual in-cluster pod. As of 2026-09-18 the Android app
 defaults and one-time migrates to the stable gateway endpoint
 `arch-ssd.tail38f762.ts.net:30800`, and the gateway manifest mounts the
-profile/voiceprint from a Secret. Applying those latest changes and testing
-one real Stick conversation remain before the runtime cutover is verified.
+profile/voiceprint from a Secret. Both are applied, and real Stick conversations
+run through the cluster gateway (verified 2026-09-24).
 
 Full design (service-boundary reasoning, the k3s-vs-alternatives tradeoff,
 node/service placement table, the added-latency cost of splitting a process
@@ -287,6 +289,6 @@ deployment work: **`TODO.md`**.
   it doesn't — so a new backend never has to implement streaming.
 - `speech_orb.py` and the firmware render the *same* sprites; both outputs
   come from one `tools/make_face_sprites.py` run, so they cannot drift.
-- The M5StickS3 speaker is at `setVolume(255)` (max). M5Stack's own guidance
-  is ≤191 on battery to avoid a brownout reboot; set deliberately, revert if
-  reboots appear.
+- Speaker volume and display brightness are live settings from the companion
+  app, saved in NVS (`stick_settings.h`; defaults 255 and 38). M5Stack's guidance
+  is volume ≤191 on battery to avoid a brownout reboot.

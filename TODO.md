@@ -98,10 +98,9 @@ the detailed `docs/*.md` investigation logs behind each of these.
   long generation and does not shrink. Limit is now 3 GiB with a 1 GiB request.
   The budget is now measured for every pod on the node (table in
   `docs/deployment-architecture.md`), and a test stops any limit dropping to a
-  measured peak. Not solved: the standby copy costs ~0.7-1 GiB of RAM while the
-  agent uses the laptop's LLM (scaling it to 0 while the 4060 is up would
-  recover that at the cost of a slower failover), and the second RAM stick is
-  still the real fix.
+  measured peak. The standby copy's ~0.7-1 GiB is recovered since 2026-09-24:
+  the gpu-scheduler scales `llama-cpp-gtx1650` to 0 while the 4060 serves (cold
+  failover 61 s). The second RAM stick is still the real fix.
 - **STT slower than expected — resolved 2026-09-24 by changing backend.**
   faster-whisper measured 3.13 s p50 in-cluster (n=50) against 0.33 s
   standalone; `stt` now runs Moonshine on CPU, 0.19 s p50 (n=50,
@@ -120,16 +119,17 @@ the detailed `docs/*.md` investigation logs behind each of these.
   spoken confirmation and safe fallback if the selected backend is unhealthy;
   and (2) reading and changing M5StickS3 display brightness and speaker
   volume, with bounded values and immediate device-side acknowledgement.
-  The brightness/volume portion is hardware-dependent: implement and validate
-  it only when the M5StickS3 is available, with the Android app and MCP tools
-  sharing the same BLE command path.
+  The BLE settings path for brightness/volume is done (app 1.2, verified on the
+  device 2026-09-24); still open: exposing it, and backend switching, as MCP
+  tools the agent can call.
 - **Proactive push with a dedicated `say:` message type** — `Session.announce()`
   already works today (confirmed against the real Stick, no firmware change
   needed — see `docs/voice-pipeline.md`), but there's no way for the Stick to
   distinguish an agent-initiated proactive push from a normal answer. Add a
   dedicated wire message so the UI can show that distinction.
-- **Tools as MCP servers**, not functions wired to one harness (Ollama today),
-  so they survive a change of runtime or model without a rewrite.
+- **Tools as MCP servers**, not functions wired to one harness, so they survive
+  a change of runtime or model without a rewrite. The agent already uses MCP
+  (`tools/companion_control_mcp.py`); extend the pattern to new tools.
 - **Run live web-search MCP smoke tests on both Qwen routes** — run
   `tools/smoke_mcp.py` once with the RTX 4060/Qwen3-8B route active and once
   after failover to the GTX 1650/Qwen3.5-4B route; confirm both models call
@@ -196,8 +196,8 @@ via `ss` showing the live TCP connection.
   Stick to the server path. The app now fully closes stale GATT clients,
   retries scans/handshakes/WebSockets with bounded backoff, and synchronously
   tears down both transports on Stop so Start → Stop → Start does not reuse a
-  half-stopped service. The updated APK (`versionName` 1.0) is already
-  installed on the phone (owner-confirmed 2026-09-23). **Done
+  half-stopped service. The current APK (`versionName` 1.2) is installed on
+  the phone (2026-09-24). **Done
   (owner-verified 2026-09-23)**: Start → Stop → Start and a Bluetooth toggle
   both reconnect correctly on the real device. **Still remaining**:
   reboot/deep-sleep reconnect and the hours-long soak.
@@ -219,7 +219,8 @@ via `ss` showing the live TCP connection.
   - A second 8GB stick (one free slot; parts/specs worked out, purchase pending).
   - Reducing `tts` if RAM is still tight (the deployed Kitten backend is ~560 MiB,
     far below the old PyTorch Kokoro's 2.8 GiB).
-- **Speaker-gate margin is thin; its metrics are deployed (2026-09-24)**: the owner's scores through the Stick are 0.611, 0.661 and
+- **Speaker-gate margin — addressed 2026-09-24** (threshold 0.5, 33 samples; keep
+  watching the `speaker` panel). History: the owner's scores through the Stick are 0.611, 0.661 and
   0.610 against a 0.6 threshold (strangers 0.07-0.28, a synthetic voice 0.084),
   so a slightly worse take rejects the owner. Options: re-enrol through the
   Stick (the voiceprint's 10 samples predate the BLE path) and/or lower the
@@ -261,7 +262,9 @@ its gateway as the primary device path, see below.
   k3s installed and labeled, GPU runtime chain verified (containerd nvidia
   runtime + RuntimeClass + device plugin + time-slicing, see
   `docs/deployment-architecture.md`), `ollama-gtx1650`, `stt`, `tts`, and
-  `agent` all applied and confirmed `Running` with real GPU access.
+  `agent` all applied and confirmed `Running` with real GPU access at bring-up
+  (2026-09-16; since then Ollama became `llama-cpp-gtx1650` and `stt`/`tts` moved
+  to CPU).
   **`tts`'s `/synth` 500 is now fixed (2026-09-16)** — both TTS backends
   hardcoded a dev-machine conda path that didn't exist in the container;
   `PYTHON` now falls back to `sys.executable`, both CLI scripts are `COPY`'d
@@ -350,8 +353,8 @@ its gateway as the primary device path, see below.
   from a Kubernetes Secret. The manifest and Secret are applied (verified
   live 2026-09-23: `aicompanion-personal-data` exists and is mounted by the
   gateway pod, whose `/health` reports the speaker gate on), and the updated
-  APK is installed on the phone. **Still open**: verify a real Stick
-  conversation through the gateway plus the BLE soak cases above.
+  APK is installed on the phone. Real Stick conversations run through the
+  gateway (2026-09-24). **Still open**: the BLE soak cases above.
 
 ## Next repository improvements
 
@@ -368,12 +371,14 @@ its gateway as the primary device path, see below.
    all appear together; the agent benchmark alone does not cover that path.
 5. **Measured split-architecture performance** — benchmark the k3s gateway
    against `bridge_server.py`, plus the controller's 4060-up/4060-down
-   failover time, before treating the added network hops as free.
+   failover time (cold start from zero measured at 61 s on 2026-09-24; a
+   repeatable benchmark is still open), before treating the added network hops as free.
    `benchmarks/pipeline/bench_turn.py` (2026-09-24) now times STT / LLM /
    TTS per example sentence across any set of backends; first results are in
    `benchmarks/pipeline/README.md`.
-6. **Deployment hardening** — pin image digests/tags, add resource requests
-   and limits plus liveness probes, and document a tested rollback procedure.
+6. **Deployment hardening** — pin image digests/tags, add liveness probes to
+   the remaining services (resource requests/limits are done, 2026-09-23/24),
+   and document a tested rollback procedure.
 7. **Secrets cleanup** — rotate the placeholder BLE shared secret, keep the
    voiceprint/profile out of images, and document the Kubernetes Secret
    update procedure.
