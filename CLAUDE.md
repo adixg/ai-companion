@@ -48,6 +48,10 @@ Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.
 
 ## Voice pipeline (speaker gate, output volume, announcements, memory)
 
+- **Speaker verification is OFF in the cluster** since 2026-09-25 at the
+  owner's request (`--no-speaker-check` in `gateway.yaml`; every utterance is
+  answered, including the agent's Stick volume/brightness tools). What follows
+  describes the gate for when it's turned back on.
 - **Speaker verification** gates replies to the enrolled owner's voice
   (WeSpeaker ECAPA-TDNN-512 ONNX, `--speaker-threshold 0.6` by default; **the
   cluster gateway runs 0.5** since 2026-09-24, after the owner was rejected at
@@ -98,8 +102,8 @@ boot until the phone connects), and a
 BtnB double-click resets). **BtnB hold** starts hands-free listening: an
 on-device endpointer (`vad.h`, loudness vs. an adaptive noise floor, 0.8 s
 hangover, host-tested in `tests/test_firmware_vad.py`) starts the turn on speech
-and ends it on quiet; nothing is sent until speech. **Saying "Assistant"**
-(since 2026-09-25; "Rina-chan" is also trained, one command to switch back)
+and ends it on quiet; nothing is sent until speech. **Saying "Rina-chan"**
+(an "Assistant" model is also trained and kept in `models/`, one command to switch)
 starts the same mode: an on-device wake word (`wake_word.h`, a microWakeWord
 model trained locally, TFLite Micro + esp-nn vendored in `lib/tflm_esp`, 2.8 ms
 per 30 ms of audio, working on the device 2026-09-25: 12/12 detected, no false
