@@ -85,6 +85,11 @@ Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.
 - **Proactive announcements** (`Session.announce`, `tools/say.py`) and a
   static **encouragement loop** (`--encourage`) both work with **no firmware
   change** — the wire protocol never checks who started a turn.
+  **Reminders** ride on the same mechanism (since 2026-09-25): the agent's
+  `set_reminder`/`list_reminders`/`cancel_reminder` tools call the gateway,
+  which keeps them in `/var/lib/aicompanion/reminders/reminders.json` on
+  arch-ssd and says each when due (or on reconnect if the Stick was away).
+  `docs/companion-control-mcp.md`.
 - **Memory** is `memory/about-me.md`, read fresh every start, plus a notes
   file the agent reads and writes with MCP tools (`read_notes`/`add_note`/
   `write_notes`, since 2026-09-25): `~/rina/notes.md` on arch-ssd, which the
