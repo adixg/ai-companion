@@ -98,7 +98,8 @@ boot until the phone connects), and a
 BtnB double-click resets). **BtnB hold** starts hands-free listening: an
 on-device endpointer (`vad.h`, loudness vs. an adaptive noise floor, 0.8 s
 hangover, host-tested in `tests/test_firmware_vad.py`) starts the turn on speech
-and ends it on quiet; nothing is sent until speech. **Saying "Rina-chan"**
+and ends it on quiet; nothing is sent until speech. **Saying "Assistant"**
+(since 2026-09-25; "Rina-chan" is also trained, one command to switch back)
 starts the same mode: an on-device wake word (`wake_word.h`, a microWakeWord
 model trained locally, TFLite Micro + esp-nn vendored in `lib/tflm_esp`, 2.8 ms
 per 30 ms of audio, working on the device 2026-09-25: 12/12 detected, no false
