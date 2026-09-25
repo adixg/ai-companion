@@ -85,9 +85,11 @@ Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.
 - **Proactive announcements** (`Session.announce`, `tools/say.py`) and a
   static **encouragement loop** (`--encourage`) both work with **no firmware
   change** — the wire protocol never checks who started a turn.
-- **Memory** is currently just `memory/about-me.md`, read fresh every start.
-  Persistent/searchable memory needs the agent loop above and doesn't exist
-  yet.
+- **Memory** is `memory/about-me.md`, read fresh every start, plus a notes
+  file the agent reads and writes with MCP tools (`read_notes`/`add_note`/
+  `write_notes`, since 2026-09-25): `~/rina/notes.md` on arch-ssd, which the
+  owner edits too. Only that directory is mounted into the agent pod
+  (`docs/companion-control-mcp.md`). Searchable memory doesn't exist yet.
 
 Full detail (enrollment mic-state bug, threshold calibration, volume
 normalization numbers, announcement locking): **`docs/voice-pipeline.md`**.
