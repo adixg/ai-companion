@@ -138,6 +138,13 @@ BtnA's screen-cycling lives) picks up the actual connect completion on its
 own next iteration. Confirmed live: screen cycling now works immediately at
 boot with no phone connected.
 
+**Power** (2026-09-25, written, not yet measured on the device): the Stick
+reports its battery once a minute (gateway metrics `aicompanion_stick_battery_*`,
+Grafana "Stick battery" panel with drain %/hour, and the agent's
+`get_stick_settings`), drops the BLE link to an idle 30-50 ms/latency-4 setting
+5 s after activity, and turns the screen off after 30 s idle.
+`docs/firmware-notes.md`.
+
 **Volume/brightness are live settings and firmware updates go over BLE**
 from the companion app (app 1.2), **verified on the device 2026-09-24**: the
 Stick is on the two-slot partition table, an OTA takes ~30 s (~75 KB/s), and a
