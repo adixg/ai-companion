@@ -90,6 +90,12 @@ Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.
   `write_notes`, since 2026-09-25): `~/rina/notes.md` on arch-ssd, which the
   owner edits too. Only that directory is mounted into the agent pod
   (`docs/companion-control-mcp.md`). Searchable memory doesn't exist yet.
+- **Every turn is logged** for later analysis (since 2026-09-25,
+  `--conversation-log`): transcript, reply, tool calls, timings and the
+  recording, in `/var/lib/aicompanion/conversations/` on arch-ssd (JSONL per
+  day plus `audio/`; recordings capped at 2 GB, oldest pruned). Only turns the
+  Stick sent (wake word or button) exist to be logged. Details:
+  `docs/voice-pipeline.md`.
 
 Full detail (enrollment mic-state bug, threshold calibration, volume
 normalization numbers, announcement locking): **`docs/voice-pipeline.md`**.
