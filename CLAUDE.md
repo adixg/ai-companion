@@ -90,6 +90,10 @@ Nano git-install requirement, installed Ollama models): **`docs/hardware-budget.
   which keeps them in `/var/lib/aicompanion/reminders/reminders.json` on
   arch-ssd and says each when due (or on reconnect if the Stick was away).
   `docs/companion-control-mcp.md`.
+- **Voice switching** (2026-09-25): "switch to Kokoro Bella" works by voice
+  (`set_voice`/`list_voices`); the tts pod swaps between kitten and
+  kokoro-onnx voices at runtime and remembers the choice
+  (`/var/lib/aicompanion/tts/voice.json`). `docs/companion-control-mcp.md`.
 - **`ask_claude`** (2026-09-25): the local model can hand a hard question to
   Claude (`claude-sonnet-5`, a short speakable answer), then says the answer
   in Rina's voice. Needs the `anthropic-api` Secret; 100 questions/day cap.
