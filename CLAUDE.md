@@ -129,7 +129,10 @@ starts the same mode: an on-device wake word (`wake_word.h`, a microWakeWord
 model trained locally, TFLite Micro + esp-nn vendored in `lib/tflm_esp`, 2.8 ms
 per 30 ms of audio, working on the device 2026-09-25: 12/12 detected, no false
 triggers in a short test). Training pipeline and its memory pitfalls:
-`tools/wakeword/README.md`. Powering the device fully off is the **physical
+`tools/wakeword/README.md`. **Raise to talk** (`raise_gesture.h`, 2026-09-27) is
+built and host-tested but off (`RAISE_MODE`) until fitted to recorded motion
+(`firmware/imu_logger` + `tools/imu_record.py`; `docs/firmware-notes.md`).
+Powering the device fully off is the **physical
 power button** (double-click it — confirmed PMIC-level power-off per
 M5Stack's docs); BtnB no longer has a software deep-sleep substitute, that
 was removed 2026-09-15 once the real power button's behavior was confirmed.
