@@ -88,9 +88,8 @@ cluster. Ordered by batch; within a batch, by severity.
 - **Prometheus and Tempo use RollingUpdate on RWO PVCs** (two writers briefly
   share the TSDB/WAL; seen live). Fix: `strategy: Recreate`, Prometheus
   readinessProbe.
-- **STT still requests `nvidia.com/gpu`** though Moonshine is CPU, forcing
-  Recreate (STT outage on every rollout). Fix: drop it; let
-  `switch-backend.sh`'s whisper preset add it back.
+- ~~STT still requests `nvidia.com/gpu`~~ — **done 2026-10-16**: CPU pod, RollingUpdate;
+  `switch-backend.sh stt whisper` adds the GPU slot, runtime and Recreate back.
 - **LLM routing restarts `agent`**, and applying `agent.yaml` fights the
   controller. Fix: one `llm` Service whose selector the controller patches, same
   `--alias` on both servers.
